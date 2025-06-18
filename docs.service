@@ -1,0 +1,19 @@
+[Unit]
+Description=Java docs-server service
+Wants=network.target
+After=network.target
+
+[Service]
+Type=simple
+
+WorkingDirectory=/usr/share/java/docs-server
+ExecStart=/usr/share/java/docs-server/startup.sh
+ExecStop=/usr/share/java/docs-server/shutdown.sh
+
+User=jarapp
+Group=jarapp
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,1 @@
+ps aux | grep docs-server-fat.jar | head -n 1 | awk '{print $2}' | xargs kill -9

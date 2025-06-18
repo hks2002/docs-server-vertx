@@ -1,0 +1,77 @@
+{
+  "http": {
+    "port": 8090,
+    "compressionSupported": false,
+    "compressionLevel": 6,
+    "decompressionSupported": true
+  },
+  "handler": {
+    "session": {
+      "sessionTimeout": 900000
+    },
+    "docs": {
+      "windows": {
+        "docsRoot": "c:/docs"
+      },
+      "linux": {
+        "docsRoot": "/mnt/docs"
+      },
+      "waterMark": {
+        "enable": true,
+        "showCompany": true,
+        "showBP": true,
+        "showUser": true,
+        "companyName": "DEDIENNE",
+        "fileTypes": [
+          "pdf",
+          "jpg",
+          "jpeg",
+          "png",
+          "tif",
+          "tiff",
+          "bmp",
+          "gif"
+        ],
+        "excludeNames": [
+          "TDS",
+          "OMSD",
+          "GIM",
+          "NOTICE",
+          "GUIDE",
+          "MANUAL"
+        ]
+      },
+      "saveWithDocName": false
+    },
+    "upload": {
+      "bodyLimit": -1,
+      "folderDeep": 2,
+      "folderLen": 3
+    },
+    "adServer": {
+      "url": "ldap://127.0.0.1:389",
+      "domain": "docs.com",
+      "searchBase": "OU=User,DC=docs,DC=com"
+    }
+  },
+  "mysql": {
+    "jdbcUrl": "jdbc:mysql://localhost/docs",
+    "user": "docs",
+    "password": "password",
+    "poolOptions": {
+      "maxSize": 10,
+      "maxWaitQueueSize": 20,
+      "idleTimeout": 30000
+    }
+  },
+  "mssql": {
+    "jdbcUrl": "jdbc:sqlserver://localhost\\myDB;DatabaseName=docs;TrustServerCertificate=true;",
+    "user": "docs",
+    "password": "password",
+    "poolOptions": {
+      "maxSize": 3,
+      "maxWaitQueueSize": 10,
+      "idleTimeout": 30000
+    }
+  }
+}

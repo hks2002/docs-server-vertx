@@ -1,0 +1,26 @@
+{
+  "java.configuration.updateBuildConfiguration": "automatic",
+  "java.autobuild.enabled": true,
+  "auto-header-plus.commentElements": [
+    "Author",
+    "CreatedDate",
+    "LastEditors",
+    "LastEditDate",
+    "CopyRight"
+  ],
+  "auto-header-plus.commentElementsValue": {
+    "CopyRight": "Dedienne Aerospace China ZhuHai"
+  },
+  "auto-header-plus.pathContainsWorkspaceFolder": false,
+  "auto-header-plus.style.0": {
+    "lineWidth": 120
+  },
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": "explicit"
+  },
+  "editor.formatOnSave": true,
+  "editor.detectIndentation": false,
+  "editor.stickyTabStops": true,
+  "editor.tabSize": 2,
+  "editor.useTabStops": false
+}

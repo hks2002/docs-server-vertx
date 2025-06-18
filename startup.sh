@@ -1,0 +1,1 @@
+java -jar docs-server-fat.jar &
