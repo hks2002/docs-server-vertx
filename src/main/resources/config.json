@@ -60,7 +60,6 @@
     "password": "password",
     "poolOptions": {
       "maxSize": 10,
-      "maxWaitQueueSize": 20,
       "idleTimeout": 30000
     }
   },
@@ -69,8 +68,6 @@
     "user": "docs",
     "password": "password",
     "poolOptions": {
-      "maxSize": 3,
-      "maxWaitQueueSize": 10,
       "idleTimeout": 30000
     }
   }
