@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2022-03-26 17:57:07                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-06-03 10:21:13                                                                       *
+ * @LastEditDate          : 2025-06-19 00:56:04                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
@@ -169,7 +169,7 @@ public class HttpService {
     } catch (Exception e) {
       e.getStackTrace();
       log.error(e.getLocalizedMessage());
-      return null;
+      return new byte[0];
     }
   }
 

@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-05-11 00:19:27                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-05-18 11:58:21                                                                       *
+ * @LastEditDate          : 2025-06-19 01:09:43                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
@@ -27,7 +27,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.github.benmanes.caffeine.cache.RemovalListener;
 
-import io.vertx.core.Future;
+import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.file.FileSystem;
 import io.vertx.core.json.JsonArray;
@@ -181,12 +181,12 @@ public class DMSServices {
     return HttpService.request(url, "GET", null, null).body();
   }
 
-  private static Future<byte[]> getDocumentBytes(String id) {
+  private static byte[] getDocumentBytes(String id) {
     // 581 bugs, remove session, it works again
-    return Future.succeededFuture(HttpService.getFile(
+    return HttpService.getFile(
         "http://192.168.10.64:4040/cocoon/viewDocument/ANY?FileID=" +
             id +
-            "&UserName=TEMP&dsn=dmsDS&Client_Type=25"));
+            "&UserName=TEMP&dsn=dmsDS&Client_Type=25");
   }
 
   /**
@@ -226,13 +226,14 @@ public class DMSServices {
    * @param docs List of documents to download
    */
   public static void downloadDmsDocs(
-      FileSystem fs,
+      Vertx vertx,
       JsonArray docs,
       String toFolder,
       int toSubFolderDeep,
       int toSubFolderLen) {
 
     docs.forEach(item -> {
+      FileSystem fs = vertx.fileSystem();
       JsonObject doc = (JsonObject) item;
       String fileName = doc.getString("file_name");
 
@@ -243,12 +244,11 @@ public class DMSServices {
               String tempFile = fs.createTempFileBlocking(null, null);
               log.debug("[Dms][DOWNLOAD] {} from Dms server to {}...", fileName, tempFile);
 
-              var f1 = getDocumentBytes(doc.getString("location")); // using location as id
-              f1.onFailure(e -> {
-                log.error("[Dms][DOWNLOAD] {} from Dms server failed", fileName);
-              });
-              f1.onSuccess(bytes -> {
-                if (bytes.length > 0 && bytes.length != 581) {
+              vertx.executeBlocking(() -> {
+                return getDocumentBytes(doc.getString("location"));
+              }).onComplete(result -> {
+                byte[] bytes = result.result();
+                if (result.succeeded() && bytes.length > 0 && bytes.length != 581) {
                   log.info("[Dms][DOWNLOAD] {} from Dms server, size {}", fileName, bytes.length);
 
                   var f2 = fs.writeFile(tempFile, Buffer.buffer(bytes));
@@ -267,9 +267,11 @@ public class DMSServices {
                   log.error("[Dms][DOWNLOAD] {} from Dms server, size {}", fileName, bytes.length);
                 }
               });
+
             }
           });
 
     });
+
   }
 }

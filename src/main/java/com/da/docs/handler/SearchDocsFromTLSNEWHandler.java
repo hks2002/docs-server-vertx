@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-10 01:05:38                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-05-25 16:05:31                                                                       *
+ * @LastEditDate          : 2025-06-19 01:22:19                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
@@ -15,6 +15,7 @@ import com.da.docs.service.DMSServices;
 import com.da.docs.utils.Response;
 
 import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
@@ -48,6 +49,7 @@ public class SearchDocsFromTLSNEWHandler implements Handler<RoutingContext> {
 
   @Override
   public void handle(RoutingContext context) {
+    Vertx vertx = context.vertx();
     User user = context.user();
 
     Authorizations authorizations = user.authorizations();
@@ -62,10 +64,31 @@ public class SearchDocsFromTLSNEWHandler implements Handler<RoutingContext> {
 
     String PN = request.getParam("PN").toUpperCase();
     try {
-      var json = DMSServices.getDocuments(PN);
-      DMSServices.downloadDmsDocs(context.vertx().fileSystem(), json, docsRoot, folderDeep, folderLen);
+      vertx.executeBlocking(() -> {
+        return DMSServices.getDocuments(PN);
+      }).onComplete(
+          result -> {
+            response.putHeader(HttpHeaders.CONTENT_TYPE, "application/json");
+            if (result.succeeded() && result.result().size() > 0) {
 
-      response.putHeader(HttpHeaders.CONTENT_TYPE, "application/json").end(json.encode());
+              vertx.executeBlocking(() -> {
+                DMSServices.downloadDmsDocs(
+                    context.vertx(),
+                    result.result(),
+                    docsRoot,
+                    folderDeep,
+                    folderLen);
+                return "";
+              }).onFailure(err -> {
+                log.error("{}", err.getMessage());
+              });
+
+              response.end(result.result().encode());
+            } else {
+              response.end("[]");
+            }
+          });
+
     } catch (Exception e) {
       log.error("{}", e.getMessage());
       Response.internalError(context);
