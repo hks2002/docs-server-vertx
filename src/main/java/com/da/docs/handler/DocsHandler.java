@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-10 01:05:38                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-06-16 15:19:07                                                                       *
+ * @LastEditDate          : 2025-06-19 00:01:26                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
@@ -140,26 +140,15 @@ public class DocsHandler implements Handler<RoutingContext> {
     int idx = file.lastIndexOf('/');
     String name = file.substring(idx + 1);
     if (name.length() > 0 && name.charAt(0) == '.') {
-      // skip
-      if (!context.request().isEnded()) {
-        context.request().resume();
-      }
-      context.next();
       return;
     }
 
     // verify if the file exists
     fs.exists(file).onFailure(err -> {
-      if (!context.request().isEnded()) {
-        context.request().resume();
-      }
       context.fail(err);
     }).onSuccess(exists -> {
       // check again
       if (!exists) {
-        if (!context.request().isEnded()) {
-          context.request().resume();
-        }
         Response.notFound(context);
         return;
       }
@@ -196,9 +185,6 @@ public class DocsHandler implements Handler<RoutingContext> {
     FileSystem fs = context.vertx().fileSystem();
 
     fs.readDir(systemFile).onFailure(err -> {
-      if (!context.request().isEnded()) {
-        context.request().resume();
-      }
       context.fail(err);
     }).onSuccess(list -> {
       // log.info("{}, {}", requestPath, systemFile);
@@ -294,29 +280,23 @@ public class DocsHandler implements Handler<RoutingContext> {
         !CommonUtils.nameMatch(fileName, waterMakerExcludeNames)) {
 
       // add watermark
-      context.vertx().fileSystem().readFile(file).onSuccess(buffer -> {
+      fs.readFile(file).onSuccess(buffer -> {
         ByteArrayInputStream bis = new ByteArrayInputStream(buffer.getBytes());
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
 
         context.vertx().executeBlocking(
             () -> {
-              return ITextTools.addWatermark(extension, bis, bos, wmText, 30, bpCode.isEmpty() ? 0.3f : 0.05f);
+              return ITextTools.addWatermark(extension, bis, bos, wmText, 30, bpCode.isEmpty() ? 0.3f : 0.03f);
             }).onComplete(
                 result -> {
                   if (result.succeeded() && result.result()) {
                     writeDispositionHeaders(response, MimeMapping.mimeTypeForExtension("pdf"), outFileName);
-
                     Buffer responseBuffer = Buffer.buffer(bos.toByteArray());
-                    response.send(responseBuffer)
-                        .onFailure(err -> {
-                          if (!context.request().isEnded()) {
-                            context.request().resume();
-                          }
-                          context.fail(err);
-                        });
+                    response.end(responseBuffer);
                   } else {
-                    log.error("{}", result.result());
-                    Response.internalError(context);
+                    writeDispositionHeaders(response, MimeMapping.mimeTypeForExtension(extension), outFileName);
+                    Buffer responseBuffer = Buffer.buffer(buffer.getBytes());
+                    response.end(responseBuffer);
                   }
                 });
       });
@@ -326,13 +306,7 @@ public class DocsHandler implements Handler<RoutingContext> {
 
       fs.readFile(file).onSuccess(buffer -> {
         Buffer responseBuffer = Buffer.buffer(buffer.getBytes());
-        response.send(responseBuffer)
-            .onFailure(err -> {
-              if (!context.request().isEnded()) {
-                context.request().resume();
-              }
-              context.fail(err);
-            });
+        response.end(responseBuffer);
       });
 
     }

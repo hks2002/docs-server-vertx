@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-25 22:14:57                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-05-23 22:41:52                                                                       *
+ * @LastEditDate          : 2025-06-18 22:52:45                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
@@ -10,7 +10,6 @@ package com.da.docs.utils;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
@@ -136,8 +135,8 @@ public class ITextTools {
       pdf.close();
       log.trace("Add watermark success");
       return true;
-    } catch (IOException e) {
-      log.error("add water marker failed: {}", e);
+    } catch (Exception e) {
+      log.error("Add water marker failed: {}", e);
       return false;
     }
   }
@@ -195,7 +194,7 @@ public class ITextTools {
 
       return true;
     } catch (Exception e) {
-      log.error("convert to pdf failed: {}", e);
+      log.error("Convert to pdf failed: {}", e);
       return false;
     }
   }
