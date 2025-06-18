@@ -14,7 +14,7 @@ permissions:
     issues: write
 
 jobs:
-    build-test:
+    build-test-release:
         strategy:
             matrix:
                 os: [ubuntu-latest]
@@ -37,13 +37,6 @@ jobs:
                   chmod +x mvnw
                   ./mvnw test
 
-    release:
-        needs: build-test
-        strategy:
-            matrix:
-                os: [ubuntu-latest]
-        runs-on: ${{ matrix.os }}
-        steps:
             - uses: google-github-actions/release-please-action@v3
               with:
                   release-type: maven
