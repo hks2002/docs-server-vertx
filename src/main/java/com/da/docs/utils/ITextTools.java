@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-25 22:14:57                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-06-18 22:52:45                                                                       *
+ * @LastEditDate          : 2025-06-19 09:49:20                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
@@ -133,7 +133,6 @@ public class ITextTools {
 
       // close pdf
       pdf.close();
-      log.trace("Add watermark success");
       return true;
     } catch (Exception e) {
       log.error("Add water marker failed: {}", e);

@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-10 01:05:38                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-06-19 00:01:26                                                                       *
+ * @LastEditDate          : 2025-06-19 09:55:43                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
@@ -287,18 +287,23 @@ public class DocsHandler implements Handler<RoutingContext> {
         context.vertx().executeBlocking(
             () -> {
               return ITextTools.addWatermark(extension, bis, bos, wmText, 30, bpCode.isEmpty() ? 0.3f : 0.03f);
-            }).onComplete(
-                result -> {
-                  if (result.succeeded() && result.result()) {
-                    writeDispositionHeaders(response, MimeMapping.mimeTypeForExtension("pdf"), outFileName);
-                    Buffer responseBuffer = Buffer.buffer(bos.toByteArray());
-                    response.end(responseBuffer);
-                  } else {
-                    writeDispositionHeaders(response, MimeMapping.mimeTypeForExtension(extension), outFileName);
-                    Buffer responseBuffer = Buffer.buffer(buffer.getBytes());
-                    response.end(responseBuffer);
-                  }
-                });
+            }).onSuccess(succeed -> {
+              if (!succeed) {
+                log.error("Failed to add watermark to file: {}", file);
+                writeDispositionHeaders(response, MimeMapping.mimeTypeForExtension("pdf"), outFileName);
+                Buffer responseBuffer = Buffer.buffer(bos.toByteArray());
+                response.end(responseBuffer);
+              } else {
+                writeDispositionHeaders(response, MimeMapping.mimeTypeForExtension(extension), outFileName);
+                Buffer responseBuffer = Buffer.buffer(buffer.getBytes());
+                response.end(responseBuffer);
+              }
+            }).onFailure(err -> {
+              log.error("Error while adding watermark to file: {}", file, err);
+              writeDispositionHeaders(response, MimeMapping.mimeTypeForExtension(extension), outFileName);
+              Buffer responseBuffer = Buffer.buffer(buffer.getBytes());
+              response.end(responseBuffer);
+            });
       });
 
     } else { // send original file
