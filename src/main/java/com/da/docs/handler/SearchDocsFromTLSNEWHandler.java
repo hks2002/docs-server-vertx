@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-10 01:05:38                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-06-19 01:22:19                                                                       *
+ * @LastEditDate          : 2025-06-19 10:11:09                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
@@ -66,28 +66,31 @@ public class SearchDocsFromTLSNEWHandler implements Handler<RoutingContext> {
     try {
       vertx.executeBlocking(() -> {
         return DMSServices.getDocuments(PN);
-      }).onComplete(
-          result -> {
-            response.putHeader(HttpHeaders.CONTENT_TYPE, "application/json");
-            if (result.succeeded() && result.result().size() > 0) {
+      }).onSuccess(ar -> {
+        response.putHeader(HttpHeaders.CONTENT_TYPE, "application/json");
+        if (ar.size() > 0) {
 
-              vertx.executeBlocking(() -> {
-                DMSServices.downloadDmsDocs(
-                    context.vertx(),
-                    result.result(),
-                    docsRoot,
-                    folderDeep,
-                    folderLen);
-                return "";
-              }).onFailure(err -> {
-                log.error("{}", err.getMessage());
-              });
-
-              response.end(result.result().encode());
-            } else {
-              response.end("[]");
-            }
+          vertx.executeBlocking(() -> {
+            DMSServices.downloadDmsDocs(
+                context.vertx(),
+                ar,
+                docsRoot,
+                folderDeep,
+                folderLen);
+            return "";
+          }).onFailure(err -> {
+            log.error("{}", err.getMessage());
           });
+
+          response.end(ar.encode());
+        } else {
+          response.end("[]");
+        }
+      }).onFailure(err -> {
+        log.error("Search docs from TLSNEW failed: {}, {}", PN, err.getMessage());
+        response.putHeader(HttpHeaders.CONTENT_TYPE, "application/json");
+        response.end("[]");
+      });
 
     } catch (Exception e) {
       log.error("{}", e.getMessage());
