@@ -99,7 +99,7 @@ public class DocsHandler implements Handler<RoutingContext> {
 
   @Override
   public void handle(RoutingContext context) {
-    User user = context.user();
+    User user = Optional.ofNullable(context.user()).orElse(User.create(new JsonObject()));
 
     Authorizations authorizations = user.authorizations();
     if (!authorizations.verify(PermissionBasedAuthorization.create("DOCS_READ"))) {

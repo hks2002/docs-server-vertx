@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-10 01:05:38                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-05-18 11:56:31                                                                       *
+ * @LastEditDate          : 2025-06-21 00:43:42                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
@@ -51,7 +51,7 @@ public class UploadHandler implements Handler<RoutingContext> {
 
   @Override
   public void handle(RoutingContext context) {
-    User user = context.user();
+    User user = Optional.ofNullable(context.user()).orElse(User.create(new JsonObject()));
 
     Authorizations authorizations = user.authorizations();
     if (!authorizations.verify(PermissionBasedAuthorization.create("DOCS_WRITE"))) {

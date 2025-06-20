@@ -8,6 +8,8 @@
 
 package com.da.docs.handler;
 
+import java.util.Optional;
+
 import com.da.docs.annotation.GetMapping;
 import com.da.docs.service.DocsService;
 import com.da.docs.utils.Response;
@@ -37,7 +39,7 @@ public class SearchDocsFromTLSOLDHandler implements Handler<RoutingContext> {
 
   @Override
   public void handle(RoutingContext context) {
-    User user = context.user();
+    User user = Optional.ofNullable(context.user()).orElse(User.create(new JsonObject()));
 
     Authorizations authorizations = user.authorizations();
     if (!authorizations.verify(PermissionBasedAuthorization.create("DOCS_READ"))) {
