@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-10 01:05:38                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-06-20 12:43:38                                                                       *
+ * @LastEditDate          : 2025-06-20 12:48:55                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
@@ -261,10 +261,10 @@ public class DocsHandler implements Handler<RoutingContext> {
     // log it
     logService.addLog("DOC_ACCESS_SUCCESS", ip, loginName, fullName, fileName, bpCode, bpName);
 
-    final String wmText = (showCompany ? companyName : "") +
+    final String wmText = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) +
+        (showCompany ? ' ' + companyName : "") +
         (showUser ? ' ' + fullName : "") +
-        (showBP ? ' ' + bpName : "") +
-        ' ' + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        (showBP ? ' ' + bpName : "");
 
     // guess content type
     String extension = getFileExtension(file);
