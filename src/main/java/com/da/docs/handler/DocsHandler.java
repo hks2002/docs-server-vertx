@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-10 01:05:38                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-06-20 12:48:55                                                                       *
+ * @LastEditDate          : 2025-06-20 14:50:03                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
@@ -250,7 +250,7 @@ public class DocsHandler implements Handler<RoutingContext> {
     String ip = CommonUtils.getTrueRemoteIp(request);
 
     // here user should not be null, it has been checked before
-    User user = context.user();
+    User user = Optional.ofNullable(context.user()).orElse(User.create(new JsonObject()));
     String loginName = user.principal().getString("login_name", "");
     String fullName = user.principal().getString("full_name", "");
 
@@ -286,26 +286,18 @@ public class DocsHandler implements Handler<RoutingContext> {
         ByteArrayInputStream bis = new ByteArrayInputStream(buffer.getBytes());
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
 
-        context.vertx().executeBlocking(
-            () -> {
-              return ITextTools.addWatermark(extension, bis, bos, wmText, 30, bpCode.isEmpty() ? 0.3f : 0.03f);
-            }).onSuccess(succeed -> {
-              if (!succeed) {
-                log.error("Failed to add watermark to file: {}", file);
-                writeDispositionHeaders(response, MimeMapping.mimeTypeForExtension("pdf"), outFileName);
-                Buffer responseBuffer = Buffer.buffer(bos.toByteArray());
-                response.end(responseBuffer);
-              } else {
-                writeDispositionHeaders(response, MimeMapping.mimeTypeForExtension(extension), outFileName);
-                Buffer responseBuffer = Buffer.buffer(buffer.getBytes());
-                response.end(responseBuffer);
-              }
-            }).onFailure(err -> {
-              log.error("Error while adding watermark to file: {}", file, err);
-              writeDispositionHeaders(response, MimeMapping.mimeTypeForExtension(extension), outFileName);
-              Buffer responseBuffer = Buffer.buffer(buffer.getBytes());
-              response.end(responseBuffer);
-            });
+        boolean b = ITextTools.addWatermark(extension, bis, bos, wmText, 30, bpCode.isEmpty() ? 0.3f : 0.03f);
+        if (b) {
+          log.info("Add watermark to file: {}", file);
+          writeDispositionHeaders(response, MimeMapping.mimeTypeForExtension("pdf"), outFileName);
+          Buffer responseBuffer = Buffer.buffer(bos.toByteArray());
+          response.end(responseBuffer);
+        } else {
+          log.error("Failed to add watermark to file: {}", file);
+          writeDispositionHeaders(response, MimeMapping.mimeTypeForExtension(extension), outFileName);
+          Buffer responseBuffer = Buffer.buffer(buffer.getBytes());
+          response.end(responseBuffer);
+        }
       });
 
     } else { // send original file
