@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-09 23:29:08                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-06-16 22:39:12                                                                       *
+ * @LastEditDate          : 2025-06-20 13:42:12                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
@@ -36,7 +36,7 @@ public class Response {
         break;
       case "text/html":
         response.setStatusCode(301);
-        response.putHeader(HttpHeaders.LOCATION, "/docs/#/Exception/500");
+        response.putHeader(HttpHeaders.LOCATION, "/docs-web/#/Exception/500");
         response.end();
         break;
       case "application/json":
@@ -66,7 +66,7 @@ public class Response {
         break;
       case "text/html":
         response.setStatusCode(301);
-        response.putHeader(HttpHeaders.LOCATION, "/docs/#/login");
+        response.putHeader(HttpHeaders.LOCATION, "/docs-web/#/login");
         response.end();
         break;
       case "application/json":
@@ -95,7 +95,7 @@ public class Response {
         break;
       case "text/html":
         response.setStatusCode(301);
-        response.putHeader(HttpHeaders.LOCATION, "/docs/#/Exception/403");
+        response.putHeader(HttpHeaders.LOCATION, "/docs-web/#/Exception/403");
         response.end();
         break;
       case "application/json":
@@ -126,7 +126,7 @@ public class Response {
         break;
       case "text/html":
         response.setStatusCode(301);
-        response.putHeader(HttpHeaders.LOCATION, "/docs/#/Exception/400");
+        response.putHeader(HttpHeaders.LOCATION, "/docs-web/#/Exception/400");
         response.end();
         break;
       case "application/json":
@@ -157,7 +157,7 @@ public class Response {
         break;
       case "text/html":
         response.setStatusCode(301);
-        response.putHeader(HttpHeaders.LOCATION, "/docs/#/Exception/404");
+        response.putHeader(HttpHeaders.LOCATION, "/docs-web/#/Exception/404");
         response.end();
         break;
       case "application/json":
