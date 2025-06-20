@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-09 23:29:08                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-05-22 19:43:53                                                                       *
+ * @LastEditDate          : 2025-06-20 11:18:21                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
@@ -14,6 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 
 import io.vertx.core.http.HttpServerRequest;
@@ -101,6 +102,35 @@ public class CommonUtils {
     StringBuilder sb = new StringBuilder(s);
     while (sb.length() < length) {
       sb.append(c);
+    }
+    return sb.toString();
+  }
+
+  public static char randomChar(String str) {
+    if (str == null || str.isEmpty())
+      throw new IllegalArgumentException("String must not be null or empty");
+    Random random = new Random();
+    int index = random.nextInt(str.length());
+    return str.charAt(index);
+  }
+
+  /**
+   * Inserts a character between each character of the given string.
+   * for example: insertBetween("abc", '-') return "a-b-c"
+   * 
+   * @param str
+   * @param insertChar
+   * @return
+   */
+  public static String addRadomChar(String str) {
+    if (str == null || str.length() <= 1)
+      return str;
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < str.length(); i++) {
+      sb.append(str.charAt(i));
+      if (i != str.length() - 1) {
+        sb.append(randomChar("_-. "));
+      }
     }
     return sb.toString();
   }
