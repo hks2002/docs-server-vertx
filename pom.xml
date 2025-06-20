@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>com.da</groupId>
@@ -11,20 +13,6 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <java.version>17</java.version>
 
-    <vertx.version>5.0.0</vertx.version>
-    <lombok.version>1.18.38</lombok.version>
-    <slf4j.version>2.0.7</slf4j.version>
-    <log4j.version>2.24.3</log4j.version>
-    <hikari.version>6.3.0</hikari.version>
-    <mysql.version>8.0.33</mysql.version>
-    <mssql.version>11.2.3.jre17</mssql.version>
-    <itext.version>9.1.0</itext.version>
-    <caffeine.version>3.2.0</caffeine.version>
-    <jsr310.version>2.18.2</jsr310.version>
-
-    <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
-    <maven-shade-plugin.version>3.2.4</maven-shade-plugin.version>
-    <maven-surefire-plugin.version>2.22.2</maven-surefire-plugin.version>
   </properties>
 
   <dependencyManagement>
@@ -32,14 +20,14 @@
       <dependency>
         <groupId>org.apache.logging.log4j</groupId>
         <artifactId>log4j-bom</artifactId>
-        <version>${log4j.version}</version>
+        <version>2.24.3</version>
         <scope>import</scope>
         <type>pom</type>
       </dependency>
       <dependency>
         <groupId>io.vertx</groupId>
         <artifactId>vertx-stack-depchain</artifactId>
-        <version>${vertx.version}</version>
+        <version>5.0.0</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -51,19 +39,13 @@
     <dependency>
       <groupId>org.projectlombok</groupId>
       <artifactId>lombok</artifactId>
-      <version>${lombok.version}</version>
+      <version>1.18.38</version>
       <scope>provided</scope>
     </dependency>
-    <!-- slf4j -->
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-      <version>${slf4j.version}</version>
-    </dependency>
-    <!-- log4j impl -->
+    <!-- log4j -->
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-slf4j2-impl</artifactId>
+      <artifactId>log4j-core</artifactId>
     </dependency>
 
     <!-- vertx -->
@@ -87,51 +69,39 @@
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
-      <artifactId>vertx-jdbc-client</artifactId>
-    </dependency>
-    <!-- db driver -->
-    <dependency>
-      <groupId>com.zaxxer</groupId>
-      <artifactId>HikariCP</artifactId>
-      <version>${hikari.version}</version>
+      <artifactId>vertx-mysql-client</artifactId>
     </dependency>
     <dependency>
-      <groupId>mysql</groupId>
-      <artifactId>mysql-connector-java</artifactId>
-      <version>${mysql.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.microsoft.sqlserver</groupId>
-      <artifactId>mssql-jdbc</artifactId>
-      <version>${mssql.version}</version>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-mssql-client</artifactId>
     </dependency>
 
     <!-- itext-pdf -->
     <dependency>
       <groupId>com.itextpdf</groupId>
       <artifactId>itext-core</artifactId>
-      <version>${itext.version}</version>
+      <version>9.1.0</version>
       <type>pom</type>
     </dependency>
     <!-- itext Encrypt -->
     <dependency>
       <groupId>com.itextpdf</groupId>
       <artifactId>bouncy-castle-adapter</artifactId>
-      <version>${itext.version}</version>
+      <version>9.1.0</version>
     </dependency>
 
     <!-- cache -->
     <dependency>
       <groupId>com.github.ben-manes.caffeine</groupId>
       <artifactId>caffeine</artifactId>
-      <version>${caffeine.version}</version>
+      <version>3.2.0</version>
     </dependency>
 
     <!-- jackson date time support -->
     <dependency>
       <groupId>com.fasterxml.jackson.datatype</groupId>
       <artifactId>jackson-datatype-jsr310</artifactId>
-      <version>${jsr310.version}</version>
+      <version>2.18.2</version>
     </dependency>
 
     <!-- test -->
@@ -153,7 +123,7 @@
     <plugins>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>${maven-compiler-plugin.version}</version>
+        <version>3.14.0</version>
         <configuration>
           <source>${java.version}</source>
           <target>${java.version}</target>
@@ -161,7 +131,7 @@
       </plugin>
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>${maven-surefire-plugin.version}</version>
+        <version>3.5.3</version>
         <configuration>
           <skipTests>true</skipTests>
           <forkCount>1</forkCount>
@@ -170,7 +140,7 @@
       </plugin>
       <plugin>
         <artifactId>maven-shade-plugin</artifactId>
-        <version>${maven-shade-plugin.version}</version>
+        <version>3.6.0</version>
         <executions>
           <execution>
             <phase>package</phase>
@@ -190,16 +160,19 @@
                 </filter>
               </filters>
               <transformers>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                <transformer
+                  implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <manifestEntries>
                     <App-Name>${project.name}</App-Name>
                     <App-Version>${project.version}</App-Version>
                     <Main-Class>com.da.docs.VertxApp</Main-Class>
                   </manifestEntries>
                 </transformer>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer">
+                <transformer
+                  implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer">
                 </transformer>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer">
+                <transformer
+                  implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer">
                 </transformer>
               </transformers>
               <outputFile>

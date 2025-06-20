@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-20 11:15:15                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-06-17 00:31:04                                                                       *
+ * @LastEditDate          : 2025-06-20 21:01:53                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
@@ -14,15 +14,18 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
+// import com.zaxxer.hikari.HikariConfig;
+// import com.zaxxer.hikari.HikariDataSource;
 
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.file.FileSystem;
 import io.vertx.core.json.JsonObject;
-import io.vertx.jdbcclient.JDBCPool;
+import io.vertx.mssqlclient.MSSQLBuilder;
+import io.vertx.mssqlclient.MSSQLConnectOptions;
+import io.vertx.mysqlclient.MySQLBuilder;
+import io.vertx.mysqlclient.MySQLConnectOptions;
 import io.vertx.sqlclient.Pool;
 import io.vertx.sqlclient.PoolOptions;
 import io.vertx.sqlclient.Row;
@@ -40,33 +43,41 @@ import lombok.extern.log4j.Log4j2;
  */
 @Log4j2
 public class DB {
-  private static Pool[] pools = new Pool[2];
+  private static Pool[] pools = new Pool[3];
   private static FileSystem fs;
 
   public static void initDB(Vertx vertx) {
     JsonObject mysqlConfig = vertx.getOrCreateContext().config().getJsonObject("mysql");
     JsonObject mssqlConfig = vertx.getOrCreateContext().config().getJsonObject("mssql");
 
-    HikariConfig mysqlHikariConfig = new HikariConfig();
-    mysqlHikariConfig.setJdbcUrl(mysqlConfig.getString("jdbcUrl", "jdbc:mysql://localhost:3306\\docs"));
-    mysqlHikariConfig.setUsername(mysqlConfig.getString("user", "docs"));
-    mysqlHikariConfig.setPassword(mysqlConfig.getString("password", "<PASSWORD>"));
-    HikariDataSource mysqlDS = new HikariDataSource(mysqlHikariConfig);
-
-    HikariConfig mssqlHikariConfig = new HikariConfig();
-    mssqlHikariConfig.setJdbcUrl(mssqlConfig.getString("jdbcUrl", "jdbc:sqlserver://localhost:1433;databaseName=docs"));
-    mssqlHikariConfig.setUsername(mssqlConfig.getString("user", "docs"));
-    mssqlHikariConfig.setPassword(mssqlConfig.getString("password", "<PASSWORD>"));
-    mssqlHikariConfig.setDriverClassName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-    HikariDataSource mssqlDS = new HikariDataSource(mssqlHikariConfig);
+    MySQLConnectOptions mysqlConnectOptions = new MySQLConnectOptions()
+        .setPort(mysqlConfig.getInteger("port", 3306))
+        .setHost(mysqlConfig.getString("host", "localhost"))
+        .setDatabase(mysqlConfig.getString("database", "docs"))
+        .setUser(mysqlConfig.getString("user", "docs"))
+        .setPassword(mysqlConfig.getString("password", "<PASSWORD>"));
+    MSSQLConnectOptions mssqlConnectOptions = new MSSQLConnectOptions()
+        .setPort(mssqlConfig.getInteger("port", 1433))
+        .setHost(mssqlConfig.getString("host", "localhost"))
+        .setDatabase(mssqlConfig.getString("database", "docs"))
+        .setUser(mssqlConfig.getString("user", "docs"))
+        .setPassword(mssqlConfig.getString("password", "<PASSWORD>"));
 
     // DB Pool options， minSize allWays be 1
     PoolOptions mysqlPoolOptions = new PoolOptions(mysqlConfig.getJsonObject("poolOptions", new JsonObject()));
     PoolOptions mssqlPoolOptions = new PoolOptions(mssqlConfig.getJsonObject("poolOptions", new JsonObject()));
 
-    // DB Connection Pool
-    Pool mysqlPool = JDBCPool.pool(vertx, mysqlDS, mysqlPoolOptions);
-    Pool mssqlPool = JDBCPool.pool(vertx, mssqlDS, mssqlPoolOptions);
+    // Database connection pool
+    Pool mysqlPool = MySQLBuilder.pool()
+        .with(mysqlPoolOptions)
+        .connectingTo(mysqlConnectOptions)
+        .using(vertx)
+        .build();
+    Pool mssqlPool = MSSQLBuilder.pool()
+        .with(mssqlPoolOptions)
+        .connectingTo(mssqlConnectOptions)
+        .using(vertx)
+        .build();
 
     DB.pools[0] = mysqlPool;
     DB.pools[1] = mssqlPool;
@@ -105,17 +116,26 @@ public class DB {
     }
 
     return validate(sqlTemplate, json).compose(valid -> {
-      return SqlTemplate
-          .forQuery(pools[dbIdx], sqlTemplate)
-          .mapTo(Row::toJson)
-          .mapFrom(TupleMapper.jsonObject())
-          .execute(json)
-          .onSuccess(ar -> {
-            log.trace("{}\n{}\n", sqlTemplate, json.encodePrettily());
-          })
-          .onFailure(ar -> {
-            log.error("{}\n{}\n{}\n", ar.getMessage(), sqlTemplate, json.encodePrettily());
-          });
+      return pools[dbIdx].getConnection().compose(conn -> {
+        log.trace("DB Connection established: {}", conn);
+
+        return SqlTemplate
+            .forQuery(conn, sqlTemplate)
+            .mapTo(Row::toJson)
+            .mapFrom(TupleMapper.jsonObject())
+            .execute(json)
+            .onSuccess(ar -> {
+              log.trace("{}\n{}\n", sqlTemplate, json.encodePrettily());
+            })
+            .onFailure(ar -> {
+              log.error("{}\n{}\n{}\n", ar.getMessage(), sqlTemplate, json.encodePrettily());
+            }).onComplete(ar -> {
+              conn.close();
+            });
+      }).onFailure(ar -> {
+        log.error("Failed to establish DB connection: {}", ar.getMessage());
+      });
+
     });
   }
 
@@ -144,16 +164,23 @@ public class DB {
     json.put("update_by", 0);
 
     return validate(sqlTemplate, json).compose(valid -> {
-      return SqlTemplate
-          .forUpdate(pools[dbIdx], sqlTemplate)
-          .mapFrom(TupleMapper.jsonObject())
-          .execute(json)
-          .onSuccess(ar -> {
-            log.trace("{}\n{}\n", sqlTemplate, json.encodePrettily());
-          })
-          .onFailure(ar -> {
-            log.error("{}\n{}\n{}\n", ar.getMessage(), sqlTemplate, json.encodePrettily());
-          });
+      return pools[dbIdx].getConnection().compose(conn -> {
+        log.trace("DB Connection established: {}", conn);
+
+        return SqlTemplate
+            .forUpdate(conn, sqlTemplate)
+            .mapFrom(TupleMapper.jsonObject())
+            .execute(json)
+            .onSuccess(ar -> {
+              log.trace("{}\n{}\n", sqlTemplate, json.encodePrettily());
+            })
+            .onFailure(ar -> {
+              log.error("{}\n{}\n{}\n", ar.getMessage(), sqlTemplate, json.encodePrettily());
+            });
+
+      }).onFailure(ar -> {
+        log.error("Failed to establish DB connection: {}", ar.getMessage());
+      });
     });
 
   }
@@ -181,16 +208,24 @@ public class DB {
     json.put("update_by", 0);
 
     return validate(sqlTemplate, json).compose(valid -> {
-      return SqlTemplate
-          .forUpdate(pools[dbIdx], sqlTemplate)
-          .mapFrom(TupleMapper.jsonObject())
-          .execute(json)
-          .onSuccess(ar -> {
-            log.trace("{}\n{}\n", sqlTemplate, json.encodePrettily());
-          })
-          .onFailure(ar -> {
-            log.error("{}\n{}\n{}\n", ar.getMessage(), sqlTemplate, json.encodePrettily());
-          });
+      return pools[dbIdx].getConnection().compose(conn -> {
+        log.trace("DB Connection established: {}", conn);
+
+        return SqlTemplate
+            .forUpdate(conn, sqlTemplate)
+            .mapFrom(TupleMapper.jsonObject())
+            .execute(json)
+            .onSuccess(ar -> {
+              log.trace("{}\n{}\n", sqlTemplate, json.encodePrettily());
+            })
+            .onFailure(ar -> {
+              log.error("{}\n{}\n{}\n", ar.getMessage(), sqlTemplate, json.encodePrettily());
+            });
+
+      }).onFailure(ar -> {
+        log.error("Failed to establish DB connection: {}", ar.getMessage());
+      });
+
     });
 
   }
@@ -215,16 +250,24 @@ public class DB {
 
   public static Future<SqlResult<Void>> deleteBySql(String sqlTemplate, JsonObject json, int dbIdx) {
     return validate(sqlTemplate, json).compose(valid -> {
-      return SqlTemplate
-          .forUpdate(pools[dbIdx], sqlTemplate)
-          .mapFrom(TupleMapper.jsonObject())
-          .execute(json)
-          .onSuccess(ar -> {
-            log.trace("{}\n{}\n", sqlTemplate, json.encodePrettily());
-          })
-          .onFailure(ar -> {
-            log.error("{}\n{}\n{}\n", ar.getMessage(), sqlTemplate, json.encodePrettily());
-          });
+      return pools[dbIdx].getConnection().compose(conn -> {
+        log.trace("DB Connection established: {}", conn);
+
+        return SqlTemplate
+            .forUpdate(conn, sqlTemplate)
+            .mapFrom(TupleMapper.jsonObject())
+            .execute(json)
+            .onSuccess(ar -> {
+              log.trace("{}\n{}\n", sqlTemplate, json.encodePrettily());
+            })
+            .onFailure(ar -> {
+              log.error("{}\n{}\n{}\n", ar.getMessage(), sqlTemplate, json.encodePrettily());
+            });
+
+      }).onFailure(ar -> {
+        log.error("Failed to establish DB connection: {}", ar.getMessage());
+      });
+
     });
 
   }

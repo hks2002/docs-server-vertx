@@ -55,7 +55,9 @@
     }
   },
   "mysql": {
-    "jdbcUrl": "jdbc:mysql://localhost/docs",
+    "host": "localhost",
+    "port": 3306,
+    "database": "docs",
     "user": "docs",
     "password": "password",
     "poolOptions": {
@@ -63,10 +65,13 @@
     }
   },
   "mssql": {
-    "jdbcUrl": "jdbc:sqlserver://localhost\\myDB;DatabaseName=docs;TrustServerCertificate=true;",
+    "host": "localhost",
+    "port": 1433,
+    "database": "docs",
     "user": "docs",
     "password": "password",
     "poolOptions": {
+      "maxSize": 10
     }
   }
 }
