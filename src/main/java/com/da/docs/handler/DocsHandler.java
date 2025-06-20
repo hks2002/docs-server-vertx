@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-10 01:05:38                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-06-20 11:21:52                                                                       *
+ * @LastEditDate          : 2025-06-20 12:43:38                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
@@ -270,7 +270,9 @@ public class DocsHandler implements Handler<RoutingContext> {
     String extension = getFileExtension(file);
     String contentType = MimeMapping.mimeTypeForExtension(extension);
     final String outFileName = encodeFileName(wmText +
-        (saveWithDocName ? ' ' + fileName : ' ' + CommonUtils.addRadomChar(fileName) + " DO NOT SAVE ME")) +
+        (saveWithDocName ? ' ' + fileName
+            : ' ' + CommonUtils.addRadomChar(getFileNameWithoutExtension(fileName)) + " DO NOT SAVE ME"))
+        +
         (extension.equals("pdf") ? ".PDF" : "." + extension + ".PDF");
 
     // add water mark for some file types
@@ -355,6 +357,15 @@ public class DocsHandler implements Handler<RoutingContext> {
     } else {
       return null;
     }
+  }
+
+  private String getFileNameWithoutExtension(String file) {
+    if (file == null)
+      return null;
+    int dotIndex = file.lastIndexOf(46);
+    if (dotIndex == -1)
+      return file;
+    return file.substring(0, dotIndex);
   }
 
   private String getFileName(String file) {
