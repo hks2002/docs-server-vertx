@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-05-11 00:19:27                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-06-19 01:09:43                                                                       *
+ * @LastEditDate          : 2025-06-20 12:01:34                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -244,11 +245,9 @@ public class DMSServices {
               String tempFile = fs.createTempFileBlocking(null, null);
               log.debug("[Dms][DOWNLOAD] {} from Dms server to {}...", fileName, tempFile);
 
-              vertx.executeBlocking(() -> {
-                return getDocumentBytes(doc.getString("location"));
-              }).onComplete(result -> {
-                byte[] bytes = result.result();
-                if (result.succeeded() && bytes.length > 0 && bytes.length != 581) {
+              CompletableFuture.runAsync(() -> {
+                byte[] bytes = getDocumentBytes(doc.getString("location"));
+                if (bytes.length > 0 && bytes.length != 581) {
                   log.info("[Dms][DOWNLOAD] {} from Dms server, size {}", fileName, bytes.length);
 
                   var f2 = fs.writeFile(tempFile, Buffer.buffer(bytes));
