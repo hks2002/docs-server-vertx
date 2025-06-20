@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-28 00:21:32                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-05-25 10:55:47                                                                       *
+ * @LastEditDate          : 2025-06-20 15:08:14                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
@@ -16,10 +16,10 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+import com.da.docs.annotation.AllMapping;
 import com.da.docs.annotation.DeleteMapping;
 import com.da.docs.annotation.GetMapping;
 import com.da.docs.annotation.PostMapping;
-import com.da.docs.annotation.RouteMapping;
 import com.da.docs.utils.PackageUtils;
 
 import io.vertx.core.Handler;
@@ -46,14 +46,14 @@ public class WebRouter extends RouterImpl {
     }
   }
 
-  private List<Class<?>> getRouteHandler(String packageName) {
+  private List<Class<?>> getAllPathHandler(String packageName) {
     List<Class<?>> routeHandler = new ArrayList<>();
 
     PackageUtils.getClassesInJarPackage(packageName).forEach(handlerName -> {
       try {
         var handlerClass = Class.forName(handlerName);
 
-        var routeMappingAnnotation = handlerClass.getAnnotation(RouteMapping.class);
+        var routeMappingAnnotation = handlerClass.getAnnotation(AllMapping.class);
         if (routeMappingAnnotation != null) {
           routeHandler.add(handlerClass);
         }
@@ -138,14 +138,14 @@ public class WebRouter extends RouterImpl {
 
     this.route().handler(bodyHandler);
     this.route().handler(sessionHandler);
-    this.route().handler(FaviconHandler.create(vertx));
-    this.route().handler(StaticHandler.create());
+    // this.route().handler(FaviconHandler.create(vertx));
+    // this.route().handler(StaticHandler.create());
   }
 
   @SuppressWarnings("unchecked")
-  private void registerRouteHandler(Vertx vertx) {
+  private void registerAllPathHandler(Vertx vertx) {
     var handlerConfig = vertx.getOrCreateContext().config().getJsonObject("handler");
-    var routeHandler = getRouteHandler("com.da.docs.handler");
+    var routeHandler = getAllPathHandler("com.da.docs.handler");
 
     routeHandler.forEach(handlerClass -> {
       log.info("{}", handlerClass);
@@ -187,7 +187,7 @@ public class WebRouter extends RouterImpl {
   public WebRouter(Vertx vertx) {
     super(vertx);
     registerGlobalHandler(vertx);
-    registerRouteHandler(vertx);
+    registerAllPathHandler(vertx);
     registerPathHandler(vertx);
   }
 

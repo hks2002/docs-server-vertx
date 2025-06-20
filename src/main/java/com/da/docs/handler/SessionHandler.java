@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-16 11:51:49                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-05-24 01:38:26                                                                       *
+ * @LastEditDate          : 2025-06-20 13:56:18                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
@@ -10,7 +10,6 @@ package com.da.docs.handler;
 
 import java.util.Optional;
 
-import com.da.docs.annotation.RouteMapping;
 import com.da.docs.service.UserService;
 import com.da.docs.utils.CommonUtils;
 import com.da.docs.utils.Response;
@@ -26,7 +25,6 @@ import io.vertx.ext.web.impl.UserContextImpl;
 import lombok.extern.log4j.Log4j2;
 
 @Log4j2
-@RouteMapping
 public class SessionHandler implements Handler<RoutingContext> {
   private static String adServer = "ldap://127.0.0.1:389";
   private static String adDomain = "docs.com";
