@@ -59,8 +59,7 @@
     "user": "docs",
     "password": "password",
     "poolOptions": {
-      "maxSize": 10,
-      "idleTimeout": 30000
+      "maxSize": 10
     }
   },
   "mssql": {
@@ -68,7 +67,6 @@
     "user": "docs",
     "password": "password",
     "poolOptions": {
-      "idleTimeout": 30000
     }
   }
 }
