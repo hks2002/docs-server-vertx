@@ -11,3 +11,7 @@ The docs server developed with vertx.
 #### Vertx Help
 * https://vertx.io/docs/ [Vert.x Documentation]
 * https://vertx-china.github.io/ [Vert.x 中文文档]
+
+#### How to deploy it
+1. using fat version, run ```java -jar docs-server-vertx-fat.jar```.
+2. or using thin version, copy `libs` and `docs-server-vertx.jar` into same folder, then run ```java -jar docs-server-vertx.jar```.

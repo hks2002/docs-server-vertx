@@ -138,12 +138,69 @@
           <reuseForks>true</reuseForks>
         </configuration>
       </plugin>
+      <!-- the default jar without dependencies -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>3.4.2</version>
+        <configuration>
+          <archive>
+            <manifest>
+              <addClasspath>true</addClasspath>
+            </manifest>
+            <manifestEntries>
+              <App-Name>${project.name}</App-Name>
+              <App-Version>${project.version}</App-Version>
+              <Main-Class>com.da.docs.VertxApp</Main-Class>
+            </manifestEntries>
+          </archive>
+        </configuration>
+      </plugin>
+      <!-- copy dependencies to lib -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <version>3.8.1</version>
+        <executions>
+          <execution>
+            <id>copy-dependencies</id>
+            <phase>package</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.build.directory}/lib</outputDirectory>
+              <includeScope>runtime</includeScope>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <!-- keep jar with version and no version at same times -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <version>3.1.0</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <target>
+                <copy
+                  file="${project.build.directory}/${project.artifactId}-${project.version}.jar"
+                  tofile="${project.build.directory}/${project.artifactId}.jar" />
+              </target>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
       <!-- package all dependencies into jar -->
       <plugin>
         <artifactId>maven-shade-plugin</artifactId>
         <version>3.6.0</version>
         <configuration>
-          <minimizeJar>true</minimizeJar>
           <createDependencyReducedPom>false</createDependencyReducedPom>
         </configuration>
         <executions>
@@ -188,45 +245,6 @@
               <outputFile>
                 ${project.build.directory}/${project.artifactId}-fat.jar
               </outputFile>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <!-- copy dependencies to lib -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <version>3.8.1</version>
-        <executions>
-          <execution>
-            <id>copy-dependencies</id>
-            <phase>package</phase>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <configuration>
-              <outputDirectory>${project.build.directory}/lib</outputDirectory>
-              <includeScope>runtime</includeScope>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <!-- keep jar with version and no version at same times -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <version>3.1.0</version>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>run</goal>
-            </goals>
-            <configuration>
-              <target>
-                <copy tofile="${project.build.directory}/${project.artifactId}.jar"
-                  file="${project.build.directory}/${project.artifactId}-${project.version}.jar" />
-              </target>
             </configuration>
           </execution>
         </executions>
