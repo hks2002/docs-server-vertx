@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-20 11:15:15                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-06-20 21:01:53                                                                       *
+ * @LastEditDate          : 2025-06-23 16:18:44                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
@@ -116,26 +116,17 @@ public class DB {
     }
 
     return validate(sqlTemplate, json).compose(valid -> {
-      return pools[dbIdx].getConnection().compose(conn -> {
-        log.trace("DB Connection established: {}", conn);
-
-        return SqlTemplate
-            .forQuery(conn, sqlTemplate)
-            .mapTo(Row::toJson)
-            .mapFrom(TupleMapper.jsonObject())
-            .execute(json)
-            .onSuccess(ar -> {
-              log.trace("{}\n{}\n", sqlTemplate, json.encodePrettily());
-            })
-            .onFailure(ar -> {
-              log.error("{}\n{}\n{}\n", ar.getMessage(), sqlTemplate, json.encodePrettily());
-            }).onComplete(ar -> {
-              conn.close();
-            });
-      }).onFailure(ar -> {
-        log.error("Failed to establish DB connection: {}", ar.getMessage());
-      });
-
+      return SqlTemplate
+          .forQuery(pools[dbIdx], sqlTemplate)
+          .mapTo(Row::toJson)
+          .mapFrom(TupleMapper.jsonObject())
+          .execute(json)
+          .onSuccess(ar -> {
+            log.trace("{}\n{}\n", sqlTemplate, json.encodePrettily());
+          })
+          .onFailure(ar -> {
+            log.error("{}\n{}\n{}\n", ar.getMessage(), sqlTemplate, json.encodePrettily());
+          });
     });
   }
 
@@ -164,23 +155,16 @@ public class DB {
     json.put("update_by", 0);
 
     return validate(sqlTemplate, json).compose(valid -> {
-      return pools[dbIdx].getConnection().compose(conn -> {
-        log.trace("DB Connection established: {}", conn);
-
-        return SqlTemplate
-            .forUpdate(conn, sqlTemplate)
-            .mapFrom(TupleMapper.jsonObject())
-            .execute(json)
-            .onSuccess(ar -> {
-              log.trace("{}\n{}\n", sqlTemplate, json.encodePrettily());
-            })
-            .onFailure(ar -> {
-              log.error("{}\n{}\n{}\n", ar.getMessage(), sqlTemplate, json.encodePrettily());
-            });
-
-      }).onFailure(ar -> {
-        log.error("Failed to establish DB connection: {}", ar.getMessage());
-      });
+      return SqlTemplate
+          .forUpdate(pools[dbIdx], sqlTemplate)
+          .mapFrom(TupleMapper.jsonObject())
+          .execute(json)
+          .onSuccess(ar -> {
+            log.trace("{}\n{}\n", sqlTemplate, json.encodePrettily());
+          })
+          .onFailure(ar -> {
+            log.error("{}\n{}\n{}\n", ar.getMessage(), sqlTemplate, json.encodePrettily());
+          });
     });
 
   }
@@ -208,24 +192,16 @@ public class DB {
     json.put("update_by", 0);
 
     return validate(sqlTemplate, json).compose(valid -> {
-      return pools[dbIdx].getConnection().compose(conn -> {
-        log.trace("DB Connection established: {}", conn);
-
-        return SqlTemplate
-            .forUpdate(conn, sqlTemplate)
-            .mapFrom(TupleMapper.jsonObject())
-            .execute(json)
-            .onSuccess(ar -> {
-              log.trace("{}\n{}\n", sqlTemplate, json.encodePrettily());
-            })
-            .onFailure(ar -> {
-              log.error("{}\n{}\n{}\n", ar.getMessage(), sqlTemplate, json.encodePrettily());
-            });
-
-      }).onFailure(ar -> {
-        log.error("Failed to establish DB connection: {}", ar.getMessage());
-      });
-
+      return SqlTemplate
+          .forUpdate(pools[dbIdx], sqlTemplate)
+          .mapFrom(TupleMapper.jsonObject())
+          .execute(json)
+          .onSuccess(ar -> {
+            log.trace("{}\n{}\n", sqlTemplate, json.encodePrettily());
+          })
+          .onFailure(ar -> {
+            log.error("{}\n{}\n{}\n", ar.getMessage(), sqlTemplate, json.encodePrettily());
+          });
     });
 
   }
@@ -250,24 +226,17 @@ public class DB {
 
   public static Future<SqlResult<Void>> deleteBySql(String sqlTemplate, JsonObject json, int dbIdx) {
     return validate(sqlTemplate, json).compose(valid -> {
-      return pools[dbIdx].getConnection().compose(conn -> {
-        log.trace("DB Connection established: {}", conn);
 
-        return SqlTemplate
-            .forUpdate(conn, sqlTemplate)
-            .mapFrom(TupleMapper.jsonObject())
-            .execute(json)
-            .onSuccess(ar -> {
-              log.trace("{}\n{}\n", sqlTemplate, json.encodePrettily());
-            })
-            .onFailure(ar -> {
-              log.error("{}\n{}\n{}\n", ar.getMessage(), sqlTemplate, json.encodePrettily());
-            });
-
-      }).onFailure(ar -> {
-        log.error("Failed to establish DB connection: {}", ar.getMessage());
-      });
-
+      return SqlTemplate
+          .forUpdate(pools[dbIdx], sqlTemplate)
+          .mapFrom(TupleMapper.jsonObject())
+          .execute(json)
+          .onSuccess(ar -> {
+            log.trace("{}\n{}\n", sqlTemplate, json.encodePrettily());
+          })
+          .onFailure(ar -> {
+            log.error("{}\n{}\n{}\n", ar.getMessage(), sqlTemplate, json.encodePrettily());
+          });
     });
 
   }
