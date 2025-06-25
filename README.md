@@ -15,3 +15,4 @@ The docs server developed with vertx.
 #### How to deploy it
 1. using fat version, run ```java -jar docs-server-vertx-fat.jar```.
 2. or using thin version, copy `libs` and `docs-server-vertx.jar` into same folder, then run ```java -jar docs-server-vertx.jar```.
+3. passing config, default config file is ```config-prod.json```, call using default config ```java -jar docs-server-vertx.jar com.da.docs.WebServerVerticle``` or using specific config ```java -jar docs-server-vertx.jar com.da.docs.WebServerVerticle --conf=config-prod.json```.

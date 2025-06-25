@@ -1,10 +1,10 @@
-/**********************************************************************************************************************
- * @Author                : Robert Huang<56649783@qq.com>                                                             *
- * @CreatedDate           : 2025-03-27 16:01:51                                                                       *
- * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-05-24 15:31:39                                                                       *
- * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
- *********************************************************************************************************************/
+/*********************************************************************************************************************
+ * @Author                : Robert Huang<56649783@qq.com>                                                            *
+ * @CreatedDate           : 2025-03-27 16:01:51                                                                      *
+ * @LastEditors           : Robert Huang<56649783@qq.com>                                                            *
+ * @LastEditDate          : 2025-06-25 15:56:57                                                                      *
+ * @CopyRight             : Dedienne Aerospace China ZhuHai                                                          *
+ ********************************************************************************************************************/
 
 package com.da.docs;
 
@@ -26,7 +26,7 @@ public class VertxApp {
 
     if (args.length == 0) {
       log.info("No args, use default Verticle: com.da.docs.WebServerVerticle");
-      args = new String[] { "com.da.docs.WebServerVerticle" };
+      args = new String[] { "com.da.docs.WebServerVerticle --conf=config-prod.json" };
     }
 
     VertxApplicationHooks hooks = new VertxAppHooks();
