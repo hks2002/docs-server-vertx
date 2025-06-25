@@ -2,14 +2,13 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                            *
  * @CreatedDate           : 2025-03-27 16:01:51                                                                      *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                            *
- * @LastEditDate          : 2025-06-25 18:35:07                                                                      *
+ * @LastEditDate          : 2025-06-25 15:56:57                                                                      *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                          *
  ********************************************************************************************************************/
 
 package com.da.docs;
 
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
 
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
@@ -25,11 +24,10 @@ public class VertxApp {
     DatabindCodec.mapper().registerModule(new JavaTimeModule())
         .setDateFormat(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS"));
 
-    // Append extra arguments to the args array
-    String[] extraArgs = new String[] { "com.da.docs.WebServerVerticle" };
-    String[] newArgs = Arrays.copyOf(args, args.length + 1);
-    System.arraycopy(extraArgs, 0, newArgs, args.length, 1);
-    args = newArgs;
+    if (args.length == 0) {
+      log.info("No args, use default Verticle: com.da.docs.WebServerVerticle");
+      args = new String[] { "com.da.docs.WebServerVerticle --conf=config-prod.json" };
+    }
 
     VertxApplicationHooks hooks = new VertxAppHooks();
     VertxApplication app = new VertxApplication(args, hooks);

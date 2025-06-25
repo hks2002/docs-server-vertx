@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                            *
  * @CreatedDate           : 2025-05-19 16:54:08                                                                      *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                            *
- * @LastEditDate          : 2025-06-25 18:39:52                                                                      *
+ * @LastEditDate          : 2025-06-16 14:18:31                                                                      *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                          *
  ********************************************************************************************************************/
 
@@ -23,6 +23,7 @@ import lombok.extern.log4j.Log4j2;
 public class VertxAppHooks implements VertxApplicationHooks {
   @Override
   public VertxBuilder createVertxBuilder(VertxOptions options) {
+    options.setMaxEventLoopExecuteTime(60000000000L); // 60s
     log.info("VertxOptions:\n{}", options.toJson().encodePrettily());
     return Vertx.builder().with(options);
   }
