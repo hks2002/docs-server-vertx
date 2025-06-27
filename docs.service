@@ -6,10 +6,12 @@ After=network.target
 [Service]
 Type=simple
 
+# change 'docs-server' to your folder
 WorkingDirectory=/usr/share/java/docs-server
 ExecStart=/usr/share/java/docs-server/startup.sh
 ExecStop=/usr/share/java/docs-server/shutdown.sh
 
+# change them to your user:group
 User=jarapp
 Group=jarapp
 
