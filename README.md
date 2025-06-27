@@ -17,3 +17,9 @@ The docs server developed with vertx.
 2. or using thin version, copy `libs` and `docs-server-vertx.jar` into same folder, then run ```java -jar docs-server-vertx.jar```.
 3. passing vterx options, run  ```java -jar docs-server-vertx.jar --options=options.json```.
 3. passing config, run ```java -jar docs-server-vertx.jar --conf=config-prod.json```.
+
+   > Allow the TLS disabled algorithms (As Required)
+   > If the connect database version is too old, and the running Linux system is new, you maybe will have the TLS connection issue by disabled algorithms.
+
+   > Edit`JAVA_HOME/conf/security/java.security`, Delete `dk.tls.disabledAlgorithms`disabled algorithms value；
+   > Edit`/etc/crypto-policies/back-ends/java.config`, Delete `jdk.tls.disabledAlgorithms`disabled algorithms value；   
