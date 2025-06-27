@@ -12,8 +12,6 @@ ExecStop=/usr/share/java/docs-server/shutdown.sh
 
 User=jarapp
 Group=jarapp
-Restart=on-failure
-RestartSec=10
 
 [Install]
 WantedBy=multi-user.target
