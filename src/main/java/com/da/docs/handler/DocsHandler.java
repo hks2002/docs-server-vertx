@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-10 01:05:38                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-06-20 14:50:03                                                                       *
+ * @LastEditDate          : 2025-06-27 22:06:57                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
@@ -268,7 +268,8 @@ public class DocsHandler implements Handler<RoutingContext> {
 
     // guess content type
     String extension = getFileExtension(file);
-    String contentType = MimeMapping.mimeTypeForExtension(extension);
+    String contentType = Optional.ofNullable(MimeMapping.mimeTypeForExtension(extension))
+        .orElse("application/octet-stream");
     final String outFileName = encodeFileName(wmText +
         (saveWithDocName ? ' ' + fileName
             : ' ' + CommonUtils.addRadomChar(getFileNameWithoutExtension(fileName)) + " DO NOT SAVE ME"))
