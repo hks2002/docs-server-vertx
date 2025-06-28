@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-16 11:51:49                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-05-18 11:55:26                                                                       *
+ * @LastEditDate          : 2025-06-28 12:18:47                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
@@ -45,8 +45,8 @@ public class LoginHandler implements Handler<RoutingContext> {
 
     if (u == null) {
       HttpServerRequest request = context.request();
-      UsernamePasswordCredentials credentials = CommonUtils
-          .getCredentials(request.headers().get(HttpHeaders.AUTHORIZATION));
+      String authorization = request.headers().get(HttpHeaders.AUTHORIZATION);
+      UsernamePasswordCredentials credentials = CommonUtils.getCredentials(authorization);
       if (credentials == null) {
         Response.unauthorized(context, "Missing Authorization header");
         return;

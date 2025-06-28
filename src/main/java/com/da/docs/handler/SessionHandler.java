@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-16 11:51:49                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-06-20 21:06:43                                                                       *
+ * @LastEditDate          : 2025-06-28 21:08:48                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
@@ -11,18 +11,16 @@ package com.da.docs.handler;
 import java.util.Optional;
 
 import com.da.docs.annotation.AllMapping;
-import com.da.docs.service.UserService;
-import com.da.docs.utils.CommonUtils;
 import com.da.docs.utils.Response;
 
 import io.vertx.core.Handler;
-import io.vertx.core.http.HttpHeaders;
-import io.vertx.core.http.HttpServerRequest;
+//import io.vertx.core.http.HttpHeaders;
+//import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.auth.User;
-import io.vertx.ext.auth.authentication.UsernamePasswordCredentials;
+//import io.vertx.ext.auth.authentication.UsernamePasswordCredentials;
 import io.vertx.ext.web.RoutingContext;
-import io.vertx.ext.web.impl.UserContextImpl;
+//import io.vertx.ext.web.impl.UserContextImpl;
 import lombok.extern.log4j.Log4j2;
 
 @Log4j2
@@ -41,33 +39,26 @@ public class SessionHandler implements Handler<RoutingContext> {
 
   @Override
   public void handle(RoutingContext context) {
-    if (context.normalizedPath().equals("/docs-api/server-info")) {
+    String requestPath = context.normalizedPath();
+    User u = context.user();
+
+    if (requestPath.equals("/docs-api/server-info") ||
+        requestPath.equals("/docs-api/login") ||
+        requestPath.equals("/docs-api/logout")) {
       context.next();
-
-    } else {
-      User u = context.user();
-
+    } else if (requestPath.equals("/docs-api/check-session")) {
       if (u == null) {
-        HttpServerRequest request = context.request();
-        UsernamePasswordCredentials credentials = CommonUtils
-            .getCredentials(request.headers().get(HttpHeaders.AUTHORIZATION));
-        if (credentials == null) {
-          Response.unauthorized(context, "Missing Authorization header");
-          return;
-        }
-
-        UserService userService = new UserService();
-        String ip = CommonUtils.getTrueRemoteIp(request);
-
-        userService.login(adServer, adDomain, adSearchBase, credentials, ip)
-            .onFailure(err -> {
-              Response.unauthorized(context, err.getMessage());
-            })
-            .onSuccess(user -> {
-              ((UserContextImpl) context.userContext()).setUser(user);
-              context.next();
-            });
-
+        log.debug("user not cached in session");
+        Response.unauthorized(context, "Session expired or not logged in");
+      } else {
+        log.debug("user: {} cached in session", u.principal());
+        Response.success(context, "Session is active");
+      }
+      return;
+    } else {
+      if (u == null) {
+        Response.unauthorized(context, "Session expired or not logged in");
+        return;
       } else {// session cached user, no need to check again
         log.debug("user: {} cached in session", u.principal());
         context.next();
