@@ -55,23 +55,23 @@
     }
   },
   "mysql": {
-    "host": "localhost",
-    "port": 3306,
-    "database": "docs",
+    "jdbcUrl": "jdbc:mysql://localhost/docs",
     "user": "docs",
     "password": "password",
     "poolOptions": {
-      "maxSize": 4
+      "maxSize": 4,
+      "idleTimeout": 300,
+      "maxLifetime": 600
     }
   },
   "mssql": {
-    "host": "localhost",
-    "port": 1433,
-    "database": "docs",
+    "jdbcUrl": "jdbc:sqlserver://127.0.0.1\\sage;DatabaseName=sage;TrustServerCertificate=true;",
     "user": "docs",
     "password": "password",
     "poolOptions": {
-      "maxSize": 4
+      "maxSize": 4,
+      "idleTimeout": 300,
+      "maxLifetime": 600
     }
   }
 }

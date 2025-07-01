@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-20 11:15:15                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-06-23 16:18:44                                                                       *
+ * @LastEditDate          : 2025-07-01 15:15:03                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
@@ -22,10 +22,8 @@ import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.file.FileSystem;
 import io.vertx.core.json.JsonObject;
-import io.vertx.mssqlclient.MSSQLBuilder;
-import io.vertx.mssqlclient.MSSQLConnectOptions;
-import io.vertx.mysqlclient.MySQLBuilder;
-import io.vertx.mysqlclient.MySQLConnectOptions;
+import io.vertx.jdbcclient.JDBCConnectOptions;
+import io.vertx.jdbcclient.JDBCPool;
 import io.vertx.sqlclient.Pool;
 import io.vertx.sqlclient.PoolOptions;
 import io.vertx.sqlclient.Row;
@@ -43,23 +41,19 @@ import lombok.extern.log4j.Log4j2;
  */
 @Log4j2
 public class DB {
-  private static Pool[] pools = new Pool[3];
+  private static Pool[] pools = new Pool[2];
   private static FileSystem fs;
 
   public static void initDB(Vertx vertx) {
     JsonObject mysqlConfig = vertx.getOrCreateContext().config().getJsonObject("mysql");
     JsonObject mssqlConfig = vertx.getOrCreateContext().config().getJsonObject("mssql");
 
-    MySQLConnectOptions mysqlConnectOptions = new MySQLConnectOptions()
-        .setPort(mysqlConfig.getInteger("port", 3306))
-        .setHost(mysqlConfig.getString("host", "localhost"))
-        .setDatabase(mysqlConfig.getString("database", "docs"))
+    JDBCConnectOptions mysqlConnectOptions = new JDBCConnectOptions()
+        .setJdbcUrl(mysqlConfig.getString("jdbcUrl", "jdbc:mysql://localhost:3306/docs"))
         .setUser(mysqlConfig.getString("user", "docs"))
         .setPassword(mysqlConfig.getString("password", "<PASSWORD>"));
-    MSSQLConnectOptions mssqlConnectOptions = new MSSQLConnectOptions()
-        .setPort(mssqlConfig.getInteger("port", 1433))
-        .setHost(mssqlConfig.getString("host", "localhost"))
-        .setDatabase(mssqlConfig.getString("database", "docs"))
+    JDBCConnectOptions mssqlConnectOptions = new JDBCConnectOptions()
+        .setJdbcUrl(mssqlConfig.getString("jdbcUrl", "jdbc:mysql://localhost:3306/docs"))
         .setUser(mssqlConfig.getString("user", "docs"))
         .setPassword(mssqlConfig.getString("password", "<PASSWORD>"));
 
@@ -68,16 +62,8 @@ public class DB {
     PoolOptions mssqlPoolOptions = new PoolOptions(mssqlConfig.getJsonObject("poolOptions", new JsonObject()));
 
     // Database connection pool
-    Pool mysqlPool = MySQLBuilder.pool()
-        .with(mysqlPoolOptions)
-        .connectingTo(mysqlConnectOptions)
-        .using(vertx)
-        .build();
-    Pool mssqlPool = MSSQLBuilder.pool()
-        .with(mssqlPoolOptions)
-        .connectingTo(mssqlConnectOptions)
-        .using(vertx)
-        .build();
+    Pool mysqlPool = JDBCPool.pool(vertx, mysqlConnectOptions, mysqlPoolOptions);
+    Pool mssqlPool = JDBCPool.pool(vertx, mssqlConnectOptions, mssqlPoolOptions);
 
     DB.pools[0] = mysqlPool;
     DB.pools[1] = mssqlPool;
