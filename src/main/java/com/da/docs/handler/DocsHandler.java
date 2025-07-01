@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-10 01:05:38                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-06-27 22:06:57                                                                       *
+ * @LastEditDate          : 2025-07-01 12:06:17                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
@@ -270,11 +270,12 @@ public class DocsHandler implements Handler<RoutingContext> {
     String extension = getFileExtension(file);
     String contentType = Optional.ofNullable(MimeMapping.mimeTypeForExtension(extension))
         .orElse("application/octet-stream");
-    final String outFileName = encodeFileName(wmText +
-        (saveWithDocName ? ' ' + fileName
-            : ' ' + CommonUtils.addRadomChar(getFileNameWithoutExtension(fileName)) + " DO NOT SAVE ME"))
-        +
-        (extension.equals("pdf") ? ".PDF" : "." + extension + ".PDF");
+    final String outFileName = encodeFileName(
+        wmText +
+            (saveWithDocName
+                ? ' ' + fileName
+                : ' ' + CommonUtils.addRadomChar(getFileNameWithoutExtension(fileName)) + " DO NOT SAVE ME"))
+        + "." + extension.toUpperCase();
 
     // add water mark for some file types
     if (waterMarkEnable &&
@@ -290,7 +291,8 @@ public class DocsHandler implements Handler<RoutingContext> {
         boolean b = ITextTools.addWatermark(extension, bis, bos, wmText, 30, bpCode.isEmpty() ? 0.3f : 0.03f);
         if (b) {
           log.info("Add watermark to file: {}", file);
-          writeDispositionHeaders(response, MimeMapping.mimeTypeForExtension("pdf"), outFileName);
+          writeDispositionHeaders(response, MimeMapping.mimeTypeForExtension("pdf"),
+              outFileName + (extension.equals("pdf") ? "" : ".PDF"));
           Buffer responseBuffer = Buffer.buffer(bos.toByteArray());
           response.end(responseBuffer);
         } else {
