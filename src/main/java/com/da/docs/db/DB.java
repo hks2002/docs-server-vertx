@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-20 11:15:15                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-07-02 13:21:42                                                                       *
+ * @LastEditDate          : 2025-07-02 22:50:02                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
@@ -116,8 +116,9 @@ public class DB {
     for (String key : json.fieldNames()) {
       String value = json.getString(key);
       if (value != null) {
-        newSql = newSql.replaceAll("#\\{" + key + "\\}", value); // replace non-string values
-        newSql = newSql.replaceAll("'#\\{" + key + "\\}'", "'" + value + "'"); // replace string values
+        String escapeVal = value.replaceAll("'", "\\'").replaceAll("\"", "\\\"");
+        newSql = newSql.replaceAll("#\\{" + key + "\\}", escapeVal); // replace non-string values
+        newSql = newSql.replaceAll("'#\\{" + key + "\\}'", "'" + escapeVal + "'"); // replace string values
       }
     }
     return newSql;
