@@ -5,7 +5,7 @@
   <groupId>com.da</groupId>
   <artifactId>docs-server-vertx</artifactId>
   <name>DocsServerVertx</name>
-  <version>1.2.1-SNAPSHOT</version>
+  <version>1.3.0</version>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
