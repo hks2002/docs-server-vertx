@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-21 15:17:16                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-05-18 11:58:41                                                                       *
+ * @LastEditDate          : 2025-07-02 12:00:21                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
@@ -15,17 +15,16 @@ import com.da.docs.db.DB;
 
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
-import io.vertx.sqlclient.SqlResult;
 import lombok.extern.log4j.Log4j2;
 
 @Log4j2
 public class FuncService {
 
-  public Future<SqlResult<Void>> addFunc(JsonObject obj) {
+  public Future<Object> addFunc(JsonObject obj) {
     return DB.insertByFile("insertFunc", obj);
   }
 
-  public Future<SqlResult<Void>> modifyFunc(JsonObject obj) {
+  public Future<Object> modifyFunc(JsonObject obj) {
     return DB.updateByFile("updateFunc", obj);
   }
 

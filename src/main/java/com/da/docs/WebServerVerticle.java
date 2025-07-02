@@ -1,10 +1,10 @@
-/**********************************************************************************************************************
- * @Author                : Robert Huang<56649783@qq.com>                                                             *
- * @CreatedDate           : 2025-03-08 19:11:51                                                                       *
- * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-05-24 16:12:12                                                                       *
- * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
- *********************************************************************************************************************/
+/*********************************************************************************************************************
+ * @Author                : Robert Huang<56649783@qq.com>                                                            *
+ * @CreatedDate           : 2025-03-08 19:11:51                                                                      *
+ * @LastEditors           : Robert Huang<56649783@qq.com>                                                            *
+ * @LastEditDate          : 2025-07-02 13:24:01                                                                      *
+ * @CopyRight             : Dedienne Aerospace China ZhuHai                                                          *
+ ********************************************************************************************************************/
 
 package com.da.docs;
 
@@ -30,5 +30,11 @@ public class WebServerVerticle extends VerticleBase {
         .listen().onSuccess(http -> {
           log.info("HTTP server started on port {}", http.actualPort());
         });
+  }
+
+  @Override
+  public Future<?> stop() {
+    DB.closeAll();
+    return Future.succeededFuture();
   }
 }

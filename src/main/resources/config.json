@@ -59,9 +59,9 @@
     "user": "docs",
     "password": "password",
     "poolOptions": {
-      "maxSize": 4,
-      "idleTimeout": 300,
-      "maxLifetime": 600
+      "maximumPoolSize": 4,
+      "minimumIdle": 1,
+      "idleTimeout": 18000
     }
   },
   "mssql": {
@@ -69,9 +69,9 @@
     "user": "docs",
     "password": "password",
     "poolOptions": {
-      "maxSize": 4,
-      "idleTimeout": 300,
-      "maxLifetime": 600
+      "maximumPoolSize": 4,
+      "minimumIdle": 1,
+      "idleTimeout": 18000
     }
   }
 }

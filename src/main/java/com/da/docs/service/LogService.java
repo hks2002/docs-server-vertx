@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-21 15:17:16                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-05-18 11:59:03                                                                       *
+ * @LastEditDate          : 2025-07-02 12:01:13                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
@@ -14,13 +14,12 @@ import com.da.docs.db.DB;
 
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
-import io.vertx.sqlclient.SqlResult;
 import lombok.extern.log4j.Log4j2;
 
 @Log4j2
 public class LogService {
 
-  public Future<SqlResult<Void>> addLog(
+  public Future<Object> addLog(
       String TCode,
       String v0,
       String v1,
@@ -64,7 +63,7 @@ public class LogService {
         });
   }
 
-  public Future<SqlResult<Void>> addLog(
+  public Future<Object> addLog(
       String TCode,
       String v0,
       String v1,
@@ -78,7 +77,7 @@ public class LogService {
     return addLog(TCode, v0, v1, v2, v3, v4, v5, v6, v7, v8, null);
   }
 
-  public Future<SqlResult<Void>> addLog(
+  public Future<Object> addLog(
       String TCode,
       String v0,
       String v1,
@@ -91,7 +90,7 @@ public class LogService {
     return addLog(TCode, v0, v1, v2, v3, v4, v5, v6, v7, null, null);
   }
 
-  public Future<SqlResult<Void>> addLog(
+  public Future<Object> addLog(
       String TCode,
       String v0,
       String v1,
@@ -103,7 +102,7 @@ public class LogService {
     return addLog(TCode, v0, v1, v2, v3, v4, v5, v6, null, null, null);
   }
 
-  public Future<SqlResult<Void>> addLog(
+  public Future<Object> addLog(
       String TCode,
       String v0,
       String v1,
@@ -114,7 +113,7 @@ public class LogService {
     return addLog(TCode, v0, v1, v2, v3, v4, v5, null, null, null, null);
   }
 
-  public Future<SqlResult<Void>> addLog(
+  public Future<Object> addLog(
       String TCode,
       String v0,
       String v1,
@@ -124,23 +123,23 @@ public class LogService {
     return addLog(TCode, v0, v1, v2, v3, v4, null, null, null, null, null);
   }
 
-  public Future<SqlResult<Void>> addLog(String TCode, String v0, String v1, String v2, String v3) {
+  public Future<Object> addLog(String TCode, String v0, String v1, String v2, String v3) {
     return addLog(TCode, v0, v1, v2, v3, null, null, null, null, null, null);
   }
 
-  public Future<SqlResult<Void>> addLog(String TCode, String v0, String v1, String v2) {
+  public Future<Object> addLog(String TCode, String v0, String v1, String v2) {
     return addLog(TCode, v0, v1, v2, null, null, null, null, null, null, null);
   }
 
-  public Future<SqlResult<Void>> addLog(String TCode, String v0, String v1) {
+  public Future<Object> addLog(String TCode, String v0, String v1) {
     return addLog(TCode, v0, v1, null, null, null, null, null, null, null, null);
   }
 
-  public Future<SqlResult<Void>> addLog(String TCode, String v0) {
+  public Future<Object> addLog(String TCode, String v0) {
     return addLog(TCode, v0, null, null, null, null, null, null, null, null, null);
   }
 
-  public Future<SqlResult<Void>> addLog(String TCode) {
+  public Future<Object> addLog(String TCode) {
     return addLog(TCode, null, null, null, null, null, null, null, null, null, null);
   }
 }

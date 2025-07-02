@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-09 23:29:08                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-06-06 17:22:33                                                                       *
+ * @LastEditDate          : 2025-07-02 12:03:57                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
@@ -30,7 +30,6 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.file.FileProps;
 import io.vertx.core.file.FileSystem;
 import io.vertx.core.json.JsonObject;
-import io.vertx.sqlclient.SqlResult;
 import lombok.extern.log4j.Log4j2;
 
 @Log4j2
@@ -128,7 +127,7 @@ public class FSUtils {
                   return Future.succeededFuture();
                 });
           } else {
-            List<Future<SqlResult<Void>>> f1 = new ArrayList<>();
+            List<Future<Object>> f1 = new ArrayList<>();
 
             for (int i = 0; i < fileList.size(); i++) {
               JsonObject oldDocs = fileList.get(i);

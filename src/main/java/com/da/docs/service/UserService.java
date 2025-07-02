@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-21 15:17:16                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-05-18 11:59:25                                                                       *
+ * @LastEditDate          : 2025-07-02 12:05:02                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
@@ -21,17 +21,16 @@ import io.vertx.ext.auth.User;
 import io.vertx.ext.auth.authentication.UsernamePasswordCredentials;
 import io.vertx.ext.auth.authorization.Authorization;
 import io.vertx.ext.auth.authorization.PermissionBasedAuthorization;
-import io.vertx.sqlclient.SqlResult;
 import lombok.extern.log4j.Log4j2;
 
 @Log4j2
 public class UserService {
 
-  public Future<SqlResult<Void>> addUser(JsonObject obj) {
+  public Future<Object> addUser(JsonObject obj) {
     return DB.insertByFile("insertUser", obj);
   }
 
-  public Future<SqlResult<Void>> modifyUser(JsonObject obj) {
+  public Future<Object> modifyUser(JsonObject obj) {
     return DB.updateByFile("updateUser", obj);
   }
 
@@ -86,8 +85,8 @@ public class UserService {
                         logService.addLog("USER_INIT_SUCCESS", ip, userName, fullName);
 
                         // init user's access
-                        Future<SqlResult<Void>> f11 = userFuncService.addUserFunc(userName, "DOCS_READ", true);
-                        Future<SqlResult<Void>> f12 = userFuncService.addUserFunc(userName, "DOCS_WRITE", false);
+                        Future<Object> f11 = userFuncService.addUserFunc(userName, "DOCS_READ", true);
+                        Future<Object> f12 = userFuncService.addUserFunc(userName, "DOCS_WRITE", false);
 
                         return Future.all(f11, f12)
                             .onFailure(err -> {
