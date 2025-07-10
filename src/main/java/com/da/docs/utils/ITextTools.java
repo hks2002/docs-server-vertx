@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-25 22:14:57                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-06-19 09:49:20                                                                       *
+ * @LastEditDate          : 2025-07-08 11:09:20                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
@@ -90,6 +90,26 @@ public class ITextTools {
       PdfDocumentInfo info = pdf.getDocumentInfo();
       info.setCreator("Docs Server");
 
+      // add js to delete pages if date if after the expire date
+      /*
+       * info.setMoreInfo("Expires", "2024-12-31");
+       * String js = """
+       * var expires = this.info.Expires;
+       * if (expires) {
+       * var y = parseInt(expires.substring(0,4));
+       * var m = parseInt(expires.substring(5,7));
+       * var d = parseInt(expires.substring(8,10))
+       * var expiredDate = new Date(y, m, d);
+       * var now = new Date();
+       * var diff = (now - expiredDate) / (1000 * 60 * 60 * 24);
+       * 
+       * if (diff > 0) {
+       * app.alert('Document is expired!');
+       * }
+       * }
+       * """;
+       * pdf.getCatalog().setOpenAction(PdfAction.createJavaScript(js));
+       */
       PdfFont font = PdfFontFactory.createFont();
       Paragraph paragraph = new Paragraph(watermarkText).setFont(font);
 
