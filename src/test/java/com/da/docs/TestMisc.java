@@ -1,10 +1,10 @@
-/**********************************************************************************************************************
- * @Author                : Robert Huang<56649783@qq.com>                                                             *
- * @CreatedDate           : 2025-03-21 19:32:00                                                                       *
- * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-06-06 11:33:08                                                                       *
- * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
- *********************************************************************************************************************/
+/*********************************************************************************************************************
+ * @Author                : Robert Huang<56649783@qq.com>                                                            *
+ * @CreatedDate           : 2025-03-21 19:32:00                                                                      *
+ * @LastEditors           : Robert Huang<56649783@qq.com>                                                            *
+ * @LastEditDate          : 2025-07-10 21:19:00                                                                      *
+ * @CopyRight             : Dedienne Aerospace China ZhuHai                                                          *
+ ********************************************************************************************************************/
 
 package com.da.docs;
 
@@ -23,6 +23,7 @@ import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.Test;
 
+import io.vertx.core.json.JsonObject;
 import lombok.extern.log4j.Log4j2;
 
 @Log4j2
@@ -106,5 +107,14 @@ public class TestMisc {
 
     log.info(formattedDateTime);
     log.info(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+  }
+
+  @Test
+  public void testListJsonObject() {
+    List<JsonObject> msg = new ArrayList<>();
+    msg.add(JsonObject.of("v1", "v1"));
+    msg.add(JsonObject.of("v2", "v2"));
+
+    log.info(JsonObject.of("success", true, "msg", msg.toArray()).encode());
   }
 }
