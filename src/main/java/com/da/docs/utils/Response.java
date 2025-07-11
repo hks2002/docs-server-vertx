@@ -2,11 +2,13 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-09 23:29:08                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-06-20 13:42:12                                                                       *
+ * @LastEditDate          : 2025-07-10 21:15:02                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
 package com.da.docs.utils;
+
+import java.util.List;
 
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerResponse;
@@ -215,6 +217,21 @@ public class Response {
         break;
       default:
         response.end(msg.encode());
+    }
+  }
+
+  public static void success(RoutingContext ctx, List<JsonObject> msg) {
+    HttpServerResponse response = ctx.response();
+    String accept = CommonUtils.getAccept(ctx);
+
+    response.putHeader(HttpHeaders.CONTENT_TYPE, accept);
+
+    switch (accept) {
+      case "application/json":
+        response.end(JsonObject.of("success", true, "msg", msg.toArray()).encode());
+        break;
+      default:
+        response.end(msg.toArray().toString());
     }
   }
 }
