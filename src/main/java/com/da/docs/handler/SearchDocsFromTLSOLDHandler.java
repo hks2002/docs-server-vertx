@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-10 01:05:38                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-05-18 11:56:00                                                                       *
+ * @LastEditDate          : 2025-07-13 12:44:24                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
@@ -54,7 +54,7 @@ public class SearchDocsFromTLSOLDHandler implements Handler<RoutingContext> {
     String PN = request.getParam("PN").toUpperCase();
     DocsService docsService = new DocsService();
 
-    docsService.searchDocsFromTLSOLDByName(JsonObject.of("PN", "%" + PN + "%"))
+    docsService.searchDocsFromTLSOLDByName(JsonObject.of("PN", "%" + PN.replace("'", "") + "%"))
         .onSuccess(list -> {
           JsonArray json = new JsonArray();
 
