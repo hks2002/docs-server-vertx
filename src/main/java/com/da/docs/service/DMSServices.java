@@ -1,10 +1,10 @@
-/**********************************************************************************************************************
- * @Author                : Robert Huang<56649783@qq.com>                                                             *
- * @CreatedDate           : 2025-05-11 00:19:27                                                                       *
- * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-06-20 12:01:34                                                                       *
- * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
- *********************************************************************************************************************/
+/*********************************************************************************************************************
+ * @Author                : Robert Huang<56649783@qq.com>                                                            *
+ * @CreatedDate           : 2025-05-11 00:19:27                                                                      *
+ * @LastEditors           : Robert Huang<56649783@qq.com>                                                            *
+ * @LastEditDate          : 2025-07-13 11:59:22                                                                      *
+ * @CopyRight             : Dedienne Aerospace China ZhuHai                                                          *
+ ********************************************************************************************************************/
 
 package com.da.docs.service;
 
@@ -124,7 +124,7 @@ public class DMSServices {
   }
 
   private static String extractModifiedDate(String htmlContent) {
-    String date = "";
+    String date = null;
     Pattern pattern = Pattern.compile("<td data-name-attr=\"obj_modificationdate\" nowrap=\"1\">(.*?)</td>");
     Matcher matcher = pattern.matcher(htmlContent);
 
@@ -205,6 +205,9 @@ public class DMSServices {
       String fileId = extractFileId(html);
 
       String dateString = extractModifiedDate(html);
+      if (dateString == null) {
+        continue;
+      }
       DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy h:mm:ss a", Locale.ENGLISH);
       LocalDateTime modifiedAt = LocalDateTime.parse(dateString, formatter);
 
@@ -213,6 +216,7 @@ public class DMSServices {
       doc.put("file_name", documentNames.get(i));
       doc.put("doc_modified_at", modifiedAt.toInstant(ZoneOffset.UTC).toEpochMilli());
       doc.put("location", fileId); // save id to location
+
       // Add the document to the list
       docs.add(doc);
     }
