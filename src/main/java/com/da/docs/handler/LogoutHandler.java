@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-16 11:51:49                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-05-18 11:55:34                                                                       *
+ * @LastEditDate          : 2025-07-17 11:14:16                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
@@ -30,21 +30,29 @@ public class LogoutHandler implements Handler<RoutingContext> {
     if (u == null) {
       Response.success(context, "Logout Success");
     } else {
-      context.userContext().logout()
-          .onSuccess((ar) -> {
-            HttpServerRequest request = context.request();
-            String ip = CommonUtils.getTrueRemoteIp(request);
-            String userName = u.principal().getString("login_name");
-            String fullName = u.principal().getString("full_name");
-            LogService logService = new LogService();
 
-            logService.addLog("LOGOUT_SUCCESS", ip, userName, fullName);
+      String accept = CommonUtils.getAccept(context);
+      HttpServerRequest request = context.request();
+      String ip = CommonUtils.getTrueRemoteIp(request);
+      String userName = u.principal().getString("login_name");
+      String fullName = u.principal().getString("full_name");
+      LogService logService = new LogService();
+      logService.addLog("LOGOUT_SUCCESS", ip, userName, fullName);
 
-            Response.success(context, "Logout Success");
-          })
-          .onFailure((ar) -> {
-            Response.internalError(context, "Logout Failed");
-          });
+      switch (accept) {
+        case "application/json":
+          context.userContext().clear();
+          Response.success(context, "Logout Success");
+          break;
+        default:
+          context.userContext().logout("/docs-web/#/login")
+              .onSuccess((ar) -> {
+              })
+              .onFailure((ar) -> {
+                Response.internalError(context, "Logout Failed");
+              });
+      }
+
     }
 
   }
