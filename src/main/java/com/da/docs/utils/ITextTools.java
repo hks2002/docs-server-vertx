@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-25 22:14:57                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-07-08 11:09:20                                                                       *
+ * @LastEditDate          : 2025-07-17 10:29:41                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
@@ -155,7 +155,7 @@ public class ITextTools {
       pdf.close();
       return true;
     } catch (Exception e) {
-      log.error("Add water marker failed: {}", e);
+      log.error("Add water marker failed: {}", e.getMessage());
       return false;
     }
   }
@@ -175,7 +175,7 @@ public class ITextTools {
 
       if (imageType == ImageType.TIFF) {
         int pageNum = TiffImageData.getNumberOfPages(imageBytes);
-        log.trace("Tiff page num: {}", pageNum);
+        log.debug("Tiff page num: {}", pageNum);
 
         Document document = null;
         for (int i = 1; i <= pageNum; i++) {
@@ -213,7 +213,7 @@ public class ITextTools {
 
       return true;
     } catch (Exception e) {
-      log.error("Convert to pdf failed: {}", e);
+      log.error("Convert to pdf failed: {}", e.getMessage());
       return false;
     }
   }
