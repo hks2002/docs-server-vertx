@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-28 00:03:05                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-06-03 15:53:39                                                                       *
+ * @LastEditDate          : 2025-08-13 16:59:18                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
@@ -56,12 +56,11 @@ public class ADServices {
     env.put(Context.SECURITY_PRINCIPAL, username + "@" + adServerDomain);
     env.put(Context.SECURITY_CREDENTIALS, password);
 
-    // Set the keystore for SSL connection
-    // String keystore = "D:\\cacerts";
-    // System.setProperty("javax.net.ssl.trustStore", keystore);
-    // env.put("java.naming.ldap.factory.socket",
-    // "com.da.docs.ssl.MySocketFactory");
-    // env.put(Context.SECURITY_PROTOCOL, "ssl");
+    // Skip SSL verification if using LDAPS
+    // hostname verification still works, so must using a valid full hostname
+    if (adServerUrl.toLowerCase().startsWith("ldaps")) {
+      env.put("java.naming.ldap.factory.socket", "com.da.docs.utils.TrustAllSSLSocketFactory");
+    }
 
     DirContext dirCtx = null;
     JsonObject user = null;
