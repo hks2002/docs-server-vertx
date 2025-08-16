@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2022-03-26 17:57:07                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-06-19 00:56:04                                                                       *
+ * @LastEditDate          : 2025-08-16 23:57:35                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
@@ -15,6 +15,7 @@ import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpRequest.Builder;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -44,24 +45,15 @@ public class HttpService {
     return request(url, method, null, null);
   }
 
-  public static HttpResponse<String> request(
-      String url,
-      String method,
-      String data) {
+  public static HttpResponse<String> request(String url, String method, String data) {
     return request(url, method, data, null);
   }
 
-  public static HttpResponse<String> request(
-      String url,
-      String method,
-      String data,
-      String auth) {
+  public static HttpResponse<String> request(String url, String method, String data, String auth) {
     try {
       // Disable host name verification Globally
       Properties props = System.getProperties();
-      props.setProperty(
-          "jdk.internal.httpclient.disableHostnameVerification",
-          Boolean.TRUE.toString());
+      props.setProperty("jdk.internal.httpclient.disableHostnameVerification", Boolean.TRUE.toString());
 
       if (client == null) {
         client = HttpClient.newBuilder().sslContext(SSLContextUtils.getMySSLContext()).build();
@@ -70,6 +62,7 @@ public class HttpService {
       Builder reqBuilder = HttpRequest
           .newBuilder()
           .uri(URI.create(url))
+          .timeout(Duration.ofMinutes(1))
           .setHeader("Content-Type", "application/json")
           .setHeader("Accept", "application/json");
 
@@ -130,8 +123,7 @@ public class HttpService {
 
       return response;
     } catch (Exception e) {
-      e.getStackTrace();
-      log.error(e.getLocalizedMessage());
+      log.error(e.getMessage(), e);
       return null;
     }
   }
@@ -167,8 +159,7 @@ public class HttpService {
 
       return response.body();
     } catch (Exception e) {
-      e.getStackTrace();
-      log.error(e.getLocalizedMessage());
+      log.error(e.getMessage(), e);
       return new byte[0];
     }
   }

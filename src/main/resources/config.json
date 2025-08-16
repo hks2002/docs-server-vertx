@@ -7,7 +7,7 @@
   },
   "handler": {
     "session": {
-      "sessionTimeout": 1800000
+      "sessionTimeout": 900000
     },
     "docs": {
       "windows": {

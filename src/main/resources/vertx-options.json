@@ -1,10 +1,10 @@
 {
   "eventLoopPoolSize": 32,
-  "workerPoolSize": 20,
+  "workerPoolSize": 32,
   "blockedThreadCheckInterval": 1000,
   "maxEventLoopExecuteTime": 6000000000,
   "maxWorkerExecuteTime": 6000000000,
-  "internalBlockingPoolSize": 20,
+  "internalBlockingPoolSize": 32,
   "haEnabled": false,
   "quorumSize": 1,
   "haGroup": "__DEFAULT__",

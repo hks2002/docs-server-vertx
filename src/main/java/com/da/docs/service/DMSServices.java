@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                            *
  * @CreatedDate           : 2025-05-11 00:19:27                                                                      *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                            *
- * @LastEditDate          : 2025-07-13 11:59:22                                                                      *
+ * @LastEditDate          : 2025-08-17 00:29:34                                                                      *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                          *
  ********************************************************************************************************************/
 
@@ -251,6 +251,11 @@ public class DMSServices {
 
               CompletableFuture.runAsync(() -> {
                 byte[] bytes = getDocumentBytes(doc.getString("location"));
+                if (bytes == null) {
+                  log.error("[Dms][DOWNLOAD] {} from Dms server, null", fileName);
+                  return;
+                }
+
                 if (bytes.length > 0 && bytes.length != 581) {
                   log.info("[Dms][DOWNLOAD] {} from Dms server, size {}", fileName, bytes.length);
 

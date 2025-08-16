@@ -1,10 +1,10 @@
-/**********************************************************************************************************************
- * @Author                : Robert Huang<56649783@qq.com>                                                             *
- * @CreatedDate           : 2025-03-10 01:05:38                                                                       *
- * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-07-01 12:06:17                                                                       *
- * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
- *********************************************************************************************************************/
+/*********************************************************************************************************************
+ * @Author                : Robert Huang<56649783@qq.com>                                                            *
+ * @CreatedDate           : 2025-03-10 01:05:38                                                                      *
+ * @LastEditors           : Robert Huang<56649783@qq.com>                                                            *
+ * @LastEditDate          : 2025-08-17 00:54:10                                                                      *
+ * @CopyRight             : Dedienne Aerospace China ZhuHai                                                          *
+ ********************************************************************************************************************/
 
 package com.da.docs.handler;
 
@@ -144,22 +144,19 @@ public class DocsHandler implements Handler<RoutingContext> {
     }
 
     // verify if the file exists
-    fs.exists(file).onFailure(err -> {
-      context.fail(err);
-    }).onSuccess(exists -> {
-      // check again
-      if (!exists) {
-        Response.notFound(context);
-        return;
-      }
+    var exists = fs.existsBlocking(file);
+    // check again
+    if (!exists) {
+      Response.notFound(context);
+      return;
+    }
 
-      FileProps fProps = fs.propsBlocking(file);
-      if (fProps.isDirectory()) {
-        sendDirectory(context, requestPath, file);
-      } else {
-        sendFile(context, fs, file, fProps);
-      }
-    });
+    FileProps fProps = fs.propsBlocking(file);
+    if (fProps.isDirectory()) {
+      sendDirectory(context, requestPath, file);
+    } else {
+      sendFile(context, fs, file, fProps);
+    }
 
   }
 
