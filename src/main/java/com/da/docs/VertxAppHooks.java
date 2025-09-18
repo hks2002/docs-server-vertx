@@ -2,17 +2,19 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                            *
  * @CreatedDate           : 2025-05-19 16:54:08                                                                      *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                            *
- * @LastEditDate          : 2025-06-25 18:39:52                                                                      *
+ * @LastEditDate          : 2025-09-18 14:03:32                                                                      *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                          *
  ********************************************************************************************************************/
 
+
 package com.da.docs;
+
+import com.da.docs.config.DocsConfig;
 
 import io.vertx.config.ConfigRetriever;
 import io.vertx.config.ConfigRetrieverOptions;
 import io.vertx.config.ConfigStoreOptions;
 import io.vertx.core.Vertx;
-import io.vertx.core.VertxBuilder;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.json.JsonObject;
 import io.vertx.launcher.application.HookContext;
@@ -21,51 +23,51 @@ import lombok.extern.log4j.Log4j2;
 
 @Log4j2
 public class VertxAppHooks implements VertxApplicationHooks {
+
+  private Vertx vertx;
+
   @Override
-  public VertxBuilder createVertxBuilder(VertxOptions options) {
-    log.info("VertxOptions:\n{}", options.toJson().encodePrettily());
-    return Vertx.builder().with(options);
+  public JsonObject afterVertxOptionsParsed(JsonObject vertxOptions) {
+    log.info("VertxOptions:\n{}", vertxOptions.encodePrettily());
+    DocsConfig.vertxOptions = new VertxOptions(vertxOptions);
+    return vertxOptions;
   }
 
   @Override
-  public void beforeDeployingVerticle(HookContext context) {
-    Vertx vertx = context.vertx();
+  public JsonObject afterConfigParsed(JsonObject config) {
     ConfigRetrieverOptions retrieveOptions = new ConfigRetrieverOptions();
 
-    if (vertx.fileSystem().existsBlocking("config.json")) {
-      retrieveOptions.addStore(new ConfigStoreOptions().setType("file")
-          .setConfig(JsonObject.of("path", "config.json")));
-    }
-    if (vertx.fileSystem().existsBlocking("config-prod.json")) {
-      retrieveOptions.addStore(new ConfigStoreOptions().setType("file")
-          .setConfig(JsonObject.of("path", "config-prod.json")));
-    }
-    if (vertx.fileSystem().existsBlocking("config-test.json")) {
-      retrieveOptions.addStore(new ConfigStoreOptions().setType("file")
-          .setConfig(JsonObject.of("path", "config-test.json")));
-    }
+    retrieveOptions.addStore(new ConfigStoreOptions().setOptional(true).setType("file")
+        .setConfig(JsonObject.of("path", "config.json")));
+    retrieveOptions.addStore(new ConfigStoreOptions().setOptional(true).setType("file")
+        .setConfig(JsonObject.of("path", "config-prod.json")));
+    retrieveOptions.addStore(new ConfigStoreOptions().setOptional(true).setType("file")
+        .setConfig(JsonObject.of("path", "config-test.json")));
     ConfigRetriever cfgRetriever = ConfigRetriever.create(vertx, retrieveOptions);
-
     try {
-      log.info("Loading config for verticle");
       // Load default config, ❗️❗️❗️ blocking call ❗️❗️❗️
-      JsonObject defaultConfig = cfgRetriever.getConfig().toCompletionStage().toCompletableFuture().get();
       // this config could passing by command line with args
       // -config=#{absolutePath.Config}
-      JsonObject deploymentConfig = context.deploymentOptions().getConfig();
-
+      JsonObject defaultConfig = cfgRetriever.getConfig().toCompletionStage().toCompletableFuture().get();
       defaultConfig.getMap().forEach((k, v) -> {
-        deploymentConfig.put(k, v);
+        config.put(k, v);
       });
-      log.info("Final Config: \n{}",
-          deploymentConfig.encodePrettily()
-              // .replaceAll("(\\\"user\\\" : \\\").*(\\\",)", "$1******$2")
-              .replaceAll("(\\\"password\\\" : \\\").*(\\\",)", "$1******$2"));
-
     } catch (Exception e) {
       log.error("{}", e);
     }
 
+    DocsConfig.config = config;
+
+    log.info("Final Config: \n{}",
+        config.encodePrettily()
+            // .replaceAll("(\\\"user\\\" : \\\").*(\\\",)", "$1******$2")
+            .replaceAll("(\\\"password\\\" : \\\").*(\\\",)", "$1******$2"));
+    return config;
+  }
+
+  @Override
+  public void beforeDeployingVerticle(HookContext context) {
+    vertx = context.vertx();
   }
 
   @Override

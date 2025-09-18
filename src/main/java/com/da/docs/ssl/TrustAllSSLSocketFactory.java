@@ -2,11 +2,12 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                            *
  * @CreatedDate           : 2025-08-06 11:43:23                                                                      *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                            *
- * @LastEditDate          : 2025-08-13 16:57:27                                                                      *
+ * @LastEditDate          : 2025-09-17 16:12:39                                                                      *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                          *
  ********************************************************************************************************************/
 
-package com.da.docs.utils;
+
+package com.da.docs.ssl;
 
 import java.io.IOException;
 import java.net.InetAddress;

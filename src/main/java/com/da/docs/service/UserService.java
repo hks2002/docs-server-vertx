@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-21 15:17:16                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-07-02 12:05:02                                                                       *
+ * @LastEditDate          : 2025-09-09 14:14:02                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
@@ -85,7 +85,7 @@ public class UserService {
                         logService.addLog("USER_INIT_SUCCESS", ip, userName, fullName);
 
                         // init user's access
-                        Future<Object> f11 = userFuncService.addUserFunc(userName, "DOCS_READ", true);
+                        Future<Object> f11 = userFuncService.addUserFunc(userName, "DOCS_READ", false);
                         Future<Object> f12 = userFuncService.addUserFunc(userName, "DOCS_WRITE", false);
 
                         return Future.all(f11, f12)

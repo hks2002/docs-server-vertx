@@ -2,9 +2,10 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-10 01:05:38                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-06-19 10:11:09                                                                       *
+ * @LastEditDate          : 2025-09-16 10:52:36                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
+
 
 package com.da.docs.handler;
 
@@ -70,17 +71,17 @@ public class SearchDocsFromTLSNEWHandler implements Handler<RoutingContext> {
         response.putHeader(HttpHeaders.CONTENT_TYPE, "application/json");
         if (ar.size() > 0) {
 
-          vertx.executeBlocking(() -> {
-            DMSServices.downloadDmsDocs(
-                context.vertx(),
-                ar,
-                docsRoot,
-                folderDeep,
-                folderLen);
-            return "";
-          }).onFailure(err -> {
-            log.error("{}", err.getMessage());
-          });
+          // vertx.executeBlocking(() -> {
+          // DMSServices.downloadDmsDocs(
+          // context.vertx(),
+          // ar,
+          // docsRoot,
+          // folderDeep,
+          // folderLen);
+          // return "";
+          // }).onFailure(err -> {
+          // log.error("{}", err.getMessage());
+          // });
 
           response.end(ar.encode());
         } else {

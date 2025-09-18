@@ -33,6 +33,7 @@ luben
 modificationdate
 nopush
 omsd
+OSGI
 projectlombok
 REFERER
 SAGEX

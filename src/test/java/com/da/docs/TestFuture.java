@@ -1,12 +1,16 @@
 /**********************************************************************************************************************
- * @Author                : <>                                                                                        *
+ * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-21 19:32:00                                                                       *
- * @LastEditors           : <>                                                                                        *
- * @LastEditDate          : 2025-05-20 13:41:05                                                                       *
+ * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
+ * @LastEditDate          : 2025-09-17 15:15:23                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
+
 package com.da.docs;
+
+import java.util.Arrays;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
@@ -122,4 +126,40 @@ public class TestFuture {
 
   }
 
+  @Test
+  public void testFuture7() {
+    f1(false)
+        .otherwise(a -> {
+          log.info("otherwise: {}", a);
+          return "Recovered";
+        }).compose(a -> {
+          log.info("Compose: {}", a);
+          return f2(true);
+        });
+
+    f1(true)
+        .otherwise(a -> {
+          log.info("otherwise: {}", a);
+          return "Recovered";
+        }).compose(a -> {
+          log.info("Compose: {}", a);
+          return f2(true);
+        });
+
+  }
+
+  @Test
+  public void testFuture8() {
+    List<Future<String>> futureList = Arrays.asList(Future.succeededFuture("Result 1"),
+        Future.succeededFuture("Result 2"));
+    Future.all(futureList).onComplete(ar -> {
+      if (ar.succeeded()) {
+        List<String> results = ar.result().list();
+        log.info("Results: {}", results);
+        // Handle the list of results here
+      } else {
+        // Handle failure
+      }
+    });
+  }
 }

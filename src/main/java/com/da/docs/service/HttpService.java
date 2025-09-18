@@ -2,9 +2,10 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2022-03-26 17:57:07                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-08-16 23:57:35                                                                       *
+ * @LastEditDate          : 2025-09-17 16:20:35                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
+
 
 package com.da.docs.service;
 
@@ -21,7 +22,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
-import com.da.docs.utils.SSLContextUtils;
+import com.da.docs.ssl.SSLContextUtils;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 

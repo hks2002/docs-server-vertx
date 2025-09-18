@@ -27,8 +27,6 @@
           "jpg",
           "jpeg",
           "png",
-          "tif",
-          "tiff",
           "bmp",
           "gif"
         ],
@@ -70,7 +68,7 @@
     "password": "password",
     "poolOptions": {
       "maximumPoolSize": 4,
-      "minimumIdle": 1,
+      "minimumIdle": 0,
       "idleTimeout": 18000
     }
   }

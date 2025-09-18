@@ -2,12 +2,14 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                            *
  * @CreatedDate           : 2025-03-21 19:32:00                                                                      *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                            *
- * @LastEditDate          : 2025-07-10 21:19:00                                                                      *
+ * @LastEditDate          : 2025-09-18 12:55:32                                                                      *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                          *
  ********************************************************************************************************************/
 
+
 package com.da.docs;
 
+import java.io.File;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -117,4 +119,16 @@ public class TestMisc {
 
     log.info(JsonObject.of("success", true, "msg", msg.toArray()).encode());
   }
+
+  @Test
+  public void testFile() {
+
+    File file = new File("config.json");
+    if (file.exists()) {
+      log.info("File exists: {}", file.getAbsolutePath());
+    } else {
+      log.info("File not exists: {}", file.getAbsolutePath());
+    }
+  }
+
 }

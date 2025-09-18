@@ -1,10 +1,11 @@
-/**********************************************************************************************************************
- * @Author                : Robert Huang<56649783@qq.com>                                                             *
- * @CreatedDate           : 2025-03-28 00:21:32                                                                       *
- * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-06-20 15:08:14                                                                       *
- * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
- *********************************************************************************************************************/
+/*********************************************************************************************************************
+ * @Author                : Robert Huang<56649783@qq.com>                                                            *
+ * @CreatedDate           : 2025-03-28 00:21:32                                                                      *
+ * @LastEditors           : Robert Huang<56649783@qq.com>                                                            *
+ * @LastEditDate          : 2025-09-18 15:29:21                                                                      *
+ * @CopyRight             : Dedienne Aerospace China ZhuHai                                                          *
+ ********************************************************************************************************************/
+
 
 package com.da.docs;
 
@@ -102,24 +103,24 @@ public class WebRouter extends RouterImpl {
 
   private Object getHandlerInstance(Class<?> clazz, Vertx vertx, JsonObject handlerConfig) {
     Constructor<?> constructor = null;
-    Object handlerInstance = null;
     try {
       constructor = getConstructor(clazz, Vertx.class, JsonObject.class);
       if (constructor != null) {
-        handlerInstance = constructor.newInstance(vertx, handlerConfig);
-      } else {
-        constructor = getConstructor(clazz, JsonObject.class);
-        if (constructor != null) {
-          handlerInstance = constructor.newInstance(handlerConfig);
-        } else {
-          constructor = getConstructor(clazz);
-          handlerInstance = constructor.newInstance();
-        }
+        return constructor.newInstance(vertx, handlerConfig);
       }
+
+      constructor = getConstructor(clazz, JsonObject.class);
+      if (constructor != null) {
+        return constructor.newInstance(handlerConfig);
+      }
+
+      constructor = getConstructor(clazz);
+      return constructor.newInstance();
+
     } catch (Exception e) {
       log.error("{}", e);
+      return null;
     }
-    return handlerInstance;
   }
 
   private void registerGlobalHandler(Vertx vertx) {

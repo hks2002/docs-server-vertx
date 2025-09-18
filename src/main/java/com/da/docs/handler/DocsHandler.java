@@ -2,9 +2,10 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                            *
  * @CreatedDate           : 2025-03-10 01:05:38                                                                      *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                            *
- * @LastEditDate          : 2025-08-17 00:54:10                                                                      *
+ * @LastEditDate          : 2025-09-18 14:55:05                                                                      *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                          *
  ********************************************************************************************************************/
+
 
 package com.da.docs.handler;
 
@@ -108,22 +109,16 @@ public class DocsHandler implements Handler<RoutingContext> {
       return;
     }
 
-    HttpServerRequest request = context.request();
-    if (request.method() != HttpMethod.GET && request.method() != HttpMethod.HEAD) {
-      Response.badRequest(context, "Only GET and HEAD are allowed");
+    // decode URL path
+    String uriDecodedPath = RFC3986.decodeURIComponent(context.normalizedPath(), true);
+    // if the normalized path is null it cannot be resolved
+    if (uriDecodedPath == null) {
+      Response.badRequest(context, "Invalid path: " + context.request().path());
       return;
-    } else {
-      // decode URL path
-      String uriDecodedPath = RFC3986.decodeURIComponent(context.normalizedPath(), true);
-      // if the normalized path is null it cannot be resolved
-      if (uriDecodedPath == null) {
-        Response.badRequest(context, "Invalid path: " + context.request().path());
-        return;
-      }
-      // will normalize and handle all paths as UNIX paths
-      String path = RFC3986.removeDotSegments(uriDecodedPath.replace('\\', '/'));
-      sendStatic(context, path);
     }
+    // will normalize and handle all paths as UNIX paths
+    String path = RFC3986.removeDotSegments(uriDecodedPath.replace('\\', '/'));
+    sendStatic(context, path);
   }
 
   private String getLocalFile(String requestPath, RoutingContext context) {
