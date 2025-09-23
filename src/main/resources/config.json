@@ -7,7 +7,7 @@
   },
   "handler": {
     "session": {
-      "sessionTimeout": 900000
+      "sessionTimeout": 3600000
     },
     "docs": {
       "windows": {
@@ -46,6 +46,7 @@
       "folderDeep": 2,
       "folderLen": 3
     },
+    "dmsServer": "http://127.0.0.1:4040",
     "adServer": {
       "url": "ldap://127.0.0.1:389",
       "domain": "docs.com",
@@ -68,7 +69,7 @@
     "password": "password",
     "poolOptions": {
       "maximumPoolSize": 4,
-      "minimumIdle": 0,
+      "minimumIdle": 1,
       "idleTimeout": 18000
     }
   }

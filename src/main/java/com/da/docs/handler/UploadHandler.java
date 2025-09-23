@@ -2,9 +2,10 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-10 01:05:38                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-06-23 16:42:59                                                                       *
+ * @LastEditDate          : 2025-09-22 18:54:42                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
+
 
 package com.da.docs.handler;
 
@@ -18,10 +19,8 @@ import com.da.docs.utils.FSUtils;
 import com.da.docs.utils.Response;
 
 import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerRequest;
-import io.vertx.core.impl.Utils;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.auth.User;
 import io.vertx.ext.auth.authorization.Authorizations;
@@ -38,18 +37,8 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 @PostMapping("/docs-api/upload")
 public class UploadHandler implements Handler<RoutingContext> {
-  private String docsRoot = "/mnt/docs";
-  private int folderDeep = 0;
-  private int folderLen = 3;
 
-  public UploadHandler(JsonObject config) {
-    JsonObject docsConfig = Utils.isWindows()
-        ? config.getJsonObject("docs").getJsonObject("windows")
-        : config.getJsonObject("docs").getJsonObject("linux");
-    this.docsRoot = docsConfig.getString("docsRoot", docsRoot);
-    var uploadConfig = Optional.ofNullable(config.getJsonObject("upload")).orElse(new JsonObject());
-    this.folderDeep = uploadConfig.getInteger("folderDeep", folderDeep);
-    this.folderLen = uploadConfig.getInteger("folderLen", folderLen);
+  public UploadHandler() {
   }
 
   @Override
@@ -67,12 +56,10 @@ public class UploadHandler implements Handler<RoutingContext> {
     String referer = request.headers().get(HttpHeaders.REFERER);
     String refererPath = CommonUtils.normalizePath(referer);
 
-    if (folderDeep == 0 && refererPath == null) {
+    if (refererPath == null) {
       Response.badRequest(context, "Bad Request, referer is null");
       return;
     }
-
-    Vertx vertx = context.vertx();
     LogService logService = new LogService();
 
     String ip = CommonUtils.getTrueRemoteIp(request);
@@ -88,19 +75,15 @@ public class UploadHandler implements Handler<RoutingContext> {
     FileUpload upload = uploads.get(0);
     log.trace("{} {} {} {}", upload.uploadedFileName(), upload.fileName(), upload.contentType(), upload.size());
     String fromPath = upload.uploadedFileName().replace('\\', '/');
-    String finalFolder = folderDeep == 0 ? docsRoot + refererPath : docsRoot;
 
     String lastModified = context.request().getHeader("Last-Modified");
     FSUtils.updateFileModifiedDate(fromPath, lastModified);
 
     FSUtils
         .setFileInfo(
-            vertx.fileSystem(),
             fromPath,
             upload.fileName(),
-            finalFolder,
-            folderDeep,
-            folderLen,
+            "",
             "MOVE")
         .onSuccess(rst -> {
           log.info("Upload file {} success", upload.fileName());

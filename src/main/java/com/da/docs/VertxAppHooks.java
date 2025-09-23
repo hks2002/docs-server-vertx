@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                            *
  * @CreatedDate           : 2025-05-19 16:54:08                                                                      *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                            *
- * @LastEditDate          : 2025-09-18 14:03:32                                                                      *
+ * @LastEditDate          : 2025-09-19 11:19:43                                                                      *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                          *
  ********************************************************************************************************************/
 
@@ -15,6 +15,7 @@ import io.vertx.config.ConfigRetriever;
 import io.vertx.config.ConfigRetrieverOptions;
 import io.vertx.config.ConfigStoreOptions;
 import io.vertx.core.Vertx;
+import io.vertx.core.VertxBuilder;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.json.JsonObject;
 import io.vertx.launcher.application.HookContext;
@@ -24,17 +25,15 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 public class VertxAppHooks implements VertxApplicationHooks {
 
-  private Vertx vertx;
-
   @Override
-  public JsonObject afterVertxOptionsParsed(JsonObject vertxOptions) {
-    log.info("VertxOptions:\n{}", vertxOptions.encodePrettily());
-    DocsConfig.vertxOptions = new VertxOptions(vertxOptions);
-    return vertxOptions;
+  public VertxBuilder createVertxBuilder(VertxOptions options) {
+    log.info("VertxOptions:\n{}", options.toJson().encodePrettily());
+    DocsConfig.vertxOptions = options;
+    return Vertx.builder().with(options);
   }
 
   @Override
-  public JsonObject afterConfigParsed(JsonObject config) {
+  public void beforeDeployingVerticle(HookContext context) {
     ConfigRetrieverOptions retrieveOptions = new ConfigRetrieverOptions();
 
     retrieveOptions.addStore(new ConfigStoreOptions().setOptional(true).setType("file")
@@ -43,39 +42,36 @@ public class VertxAppHooks implements VertxApplicationHooks {
         .setConfig(JsonObject.of("path", "config-prod.json")));
     retrieveOptions.addStore(new ConfigStoreOptions().setOptional(true).setType("file")
         .setConfig(JsonObject.of("path", "config-test.json")));
-    ConfigRetriever cfgRetriever = ConfigRetriever.create(vertx, retrieveOptions);
+    ConfigRetriever cfgRetriever = ConfigRetriever.create(context.vertx(), retrieveOptions);
+
     try {
+      log.info("Loading config for verticle");
       // Load default config, ❗️❗️❗️ blocking call ❗️❗️❗️
+      JsonObject defaultConfig = cfgRetriever.getConfig().toCompletionStage().toCompletableFuture().get();
       // this config could passing by command line with args
       // -config=#{absolutePath.Config}
-      JsonObject defaultConfig = cfgRetriever.getConfig().toCompletionStage().toCompletableFuture().get();
+      JsonObject deploymentConfig = context.deploymentOptions().getConfig();
+
       defaultConfig.getMap().forEach((k, v) -> {
-        config.put(k, v);
+        deploymentConfig.put(k, v);
       });
+
+      DocsConfig.handleConfig = deploymentConfig.getJsonObject("handler");
+
+      log.info("Final Config: \n{}",
+          deploymentConfig.encodePrettily()
+              // .replaceAll("(\\\"user\\\" : \\\").*(\\\",)", "$1******$2")
+              .replaceAll("(\\\"password\\\" : \\\").*(\\\",)", "$1******$2"));
+
     } catch (Exception e) {
       log.error("{}", e);
     }
-
-    DocsConfig.config = config;
-
-    log.info("Final Config: \n{}",
-        config.encodePrettily()
-            // .replaceAll("(\\\"user\\\" : \\\").*(\\\",)", "$1******$2")
-            .replaceAll("(\\\"password\\\" : \\\").*(\\\",)", "$1******$2"));
-    return config;
-  }
-
-  @Override
-  public void beforeDeployingVerticle(HookContext context) {
-    vertx = context.vertx();
   }
 
   @Override
   public void afterVerticleDeployed(HookContext context) {
-    // log.info("Hooray! VertxApplication Started! Running background tasks...");
-    // FSUtils.setFolderInfo(context.vertx().fileSystem(), "Z:/", "Y:/", 2, 3,
-    // "COPY");
-    // FSUtils.cleanDBDoc(context.vertx().fileSystem(), "Y:/");
+    VertxHolder.vertx = context.vertx();
+    VertxHolder.fs = context.vertx().fileSystem();
   }
 
   @Override

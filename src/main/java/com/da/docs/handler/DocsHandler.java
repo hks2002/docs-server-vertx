@@ -6,7 +6,6 @@
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                          *
  ********************************************************************************************************************/
 
-
 package com.da.docs.handler;
 
 import java.io.ByteArrayInputStream;
@@ -22,6 +21,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import com.da.docs.annotation.GetMapping;
+import com.da.docs.config.DocsConfig;
 import com.da.docs.service.LogService;
 import com.da.docs.utils.CommonUtils;
 import com.da.docs.utils.ITextTools;
@@ -71,13 +71,13 @@ public class DocsHandler implements Handler<RoutingContext> {
   private Set<String> waterMakerFileTypes = new HashSet<>();
   private Set<String> waterMakerExcludeNames = new HashSet<>();
 
-  public DocsHandler(JsonObject config) {
+  public DocsHandler() {
     JsonObject docsConfig = Utils.isWindows()
-        ? config.getJsonObject("docs").getJsonObject("windows")
-        : config.getJsonObject("docs").getJsonObject("linux");
+        ? DocsConfig.handleConfig.getJsonObject("docs").getJsonObject("windows")
+        : DocsConfig.handleConfig.getJsonObject("docs").getJsonObject("linux");
     this.docsRoot = docsConfig.getString("docsRoot", docsRoot);
 
-    JsonObject waterMarkConfig = config.getJsonObject("docs").getJsonObject("waterMark");
+    JsonObject waterMarkConfig = DocsConfig.handleConfig.getJsonObject("docs").getJsonObject("waterMark");
     this.waterMarkEnable = waterMarkConfig.getBoolean("enable", waterMarkEnable);
     this.showCompany = waterMarkConfig.getBoolean("showCompany", showCompany);
     this.showBP = waterMarkConfig.getBoolean("showBP", showBP);
@@ -95,7 +95,7 @@ public class DocsHandler implements Handler<RoutingContext> {
       waterMakerExcludeNames.add(excludeName.toUpperCase());
     }
 
-    this.saveWithDocName = config.getJsonObject("docs").getBoolean("saveWithDocName", true);
+    this.saveWithDocName = DocsConfig.handleConfig.getJsonObject("docs").getBoolean("saveWithDocName", true);
   }
 
   @Override

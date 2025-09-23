@@ -2,13 +2,11 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-10 01:05:38                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-07-10 21:22:06                                                                       *
+ * @LastEditDate          : 2025-09-18 20:13:24                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
 package com.da.docs.handler;
-
-import java.util.Optional;
 
 import com.da.docs.annotation.GetMapping;
 import com.da.docs.service.UserAccessLogService;
@@ -32,8 +30,8 @@ public class SearchUserAccessLogHandler implements Handler<RoutingContext> {
   public void handle(RoutingContext context) {
     HttpServerRequest request = context.request();
 
-    String limit = Optional.ofNullable(request.getParam("limit")).orElse("100");
-    String offset = Optional.ofNullable(request.getParam("offset")).orElse("0");
+    String limit = request.getParam("limit", "100");
+    String offset = request.getParam("offset", "0");
     User u = context.user();
     UserAccessLogService userAccessLogService = new UserAccessLogService();
 

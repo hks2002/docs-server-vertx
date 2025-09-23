@@ -1,10 +1,11 @@
-/**********************************************************************************************************************
- * @Author                : Robert Huang<56649783@qq.com>                                                             *
- * @CreatedDate           : 2025-03-10 01:05:38                                                                       *
- * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-05-18 11:55:43                                                                       *
- * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
- *********************************************************************************************************************/
+/*********************************************************************************************************************
+ * @Author                : Robert Huang<56649783@qq.com>                                                            *
+ * @CreatedDate           : 2025-03-10 01:05:38                                                                      *
+ * @LastEditors           : Robert Huang<56649783@qq.com>                                                            *
+ * @LastEditDate          : 2025-09-19 00:10:31                                                                      *
+ * @CopyRight             : Dedienne Aerospace China ZhuHai                                                          *
+ ********************************************************************************************************************/
+
 
 package com.da.docs.handler;
 
@@ -26,9 +27,6 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 @GetMapping("/docs-api/searchBP")
 public class SearchBPHandler implements Handler<RoutingContext> {
-
-  public SearchBPHandler() {
-  }
 
   @Override
   public void handle(RoutingContext context) {

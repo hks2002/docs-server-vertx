@@ -5,7 +5,11 @@
       "type": "java",
       "name": "VertxApp",
       "request": "launch",
-      "mainClass": "com.da.docs.VertxApp"
+      "mainClass": "com.da.docs.VertxApp",
+      "args": [
+        "--conf=src/main/resources/config-prod.json",
+        "--options=src/main/resources/vertx-options.json"
+      ]
     }
   ]
 }

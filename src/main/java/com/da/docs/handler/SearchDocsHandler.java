@@ -1,10 +1,10 @@
-/**********************************************************************************************************************
- * @Author                : Robert Huang<56649783@qq.com>                                                             *
- * @CreatedDate           : 2025-03-10 01:05:38                                                                       *
- * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-06-03 17:58:38                                                                       *
- * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
- *********************************************************************************************************************/
+/*********************************************************************************************************************
+ * @Author                : Robert Huang<56649783@qq.com>                                                            *
+ * @CreatedDate           : 2025-03-10 01:05:38                                                                      *
+ * @LastEditors           : Robert Huang<56649783@qq.com>                                                            *
+ * @LastEditDate          : 2025-09-18 19:04:16                                                                      *
+ * @CopyRight             : Dedienne Aerospace China ZhuHai                                                          *
+ ********************************************************************************************************************/
 
 package com.da.docs.handler;
 
@@ -34,7 +34,7 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 @GetMapping("/docs-api/searchDocs")
 public class SearchDocsHandler implements Handler<RoutingContext> {
-  public SearchDocsHandler(JsonObject config) {
+  public SearchDocsHandler() {
   }
 
   @Override

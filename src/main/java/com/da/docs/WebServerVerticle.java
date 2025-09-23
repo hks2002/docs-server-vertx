@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                            *
  * @CreatedDate           : 2025-03-08 19:11:51                                                                      *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                            *
- * @LastEditDate          : 2025-07-02 13:24:01                                                                      *
+ * @LastEditDate          : 2025-09-18 18:51:36                                                                      *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                          *
  ********************************************************************************************************************/
 
@@ -20,12 +20,12 @@ import lombok.extern.log4j.Log4j2;
 public class WebServerVerticle extends VerticleBase {
   @Override
   public Future<?> start() {
-    JsonObject config = config().getJsonObject("http");
+    JsonObject httpConfig = config().getJsonObject("http");
 
     // init DB
     DB.initDB(vertx);
 
-    return vertx.createHttpServer(new HttpServerOptions(config))
+    return vertx.createHttpServer(new HttpServerOptions(httpConfig))
         .requestHandler(new WebRouter(vertx))
         .listen().onSuccess(http -> {
           log.info("HTTP server started on port {}", http.actualPort());

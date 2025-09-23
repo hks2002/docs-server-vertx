@@ -1,32 +1,31 @@
-/**********************************************************************************************************************
- * @Author                : Robert Huang<56649783@qq.com>                                                             *
- * @CreatedDate           : 2022-03-26 17:57:07                                                                       *
- * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-09-17 16:20:35                                                                       *
- * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
- *********************************************************************************************************************/
-
+/*********************************************************************************************************************
+ * @Author                : Robert Huang<56649783@qq.com>                                                            *
+ * @CreatedDate           : 2022-03-26 17:57:07                                                                      *
+ * @LastEditors           : Robert Huang<56649783@qq.com>                                                            *
+ * @LastEditDate          : 2025-09-18 20:04:12                                                                      *
+ * @CopyRight             : Dedienne Aerospace China ZhuHai                                                          *
+ ********************************************************************************************************************/
 
 package com.da.docs.service;
 
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpRequest.BodyPublishers;
-import java.net.http.HttpRequest.Builder;
-import java.net.http.HttpResponse;
-import java.net.http.HttpResponse.BodyHandlers;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
-import com.da.docs.ssl.SSLContextUtils;
+import com.da.docs.config.DocsConfig;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
+import io.vertx.core.Future;
+import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpMethod;
+import io.vertx.ext.web.client.HttpRequest;
+import io.vertx.ext.web.client.HttpResponse;
+import io.vertx.ext.web.client.WebClient;
+import io.vertx.ext.web.client.WebClientOptions;
 import lombok.extern.log4j.Log4j2;
+import netscape.javascript.JSObject;
 
 @Log4j2
 public class HttpService {
@@ -34,135 +33,135 @@ public class HttpService {
   /**
    * Caffeine cache
    */
-  private static Cache<String, String> cache = Caffeine
+  private static Cache<String, String> cookiesCache = Caffeine
       .newBuilder()
-      .expireAfterAccess(5, TimeUnit.MINUTES)
+      .expireAfterAccess(15, TimeUnit.MINUTES)
       .maximumSize(10000)
       .build();
+  private static WebClientOptions options = new WebClientOptions().setTrustAll(true).setVerifyHost(false);
+  private static WebClient client = null;
+  private static Vertx vertx = null;
 
-  private static HttpClient client = null;
-
-  public static HttpResponse<String> request(String url, String method) {
-    return request(url, method, null, null);
+  public static Future<String> get(String url, String auth) {
+    return request(HttpMethod.GET, url, null, auth);
   }
 
-  public static HttpResponse<String> request(String url, String method, String data) {
-    return request(url, method, data, null);
+  public static Future<String> post(String url, JSObject data, String auth) {
+    return request(HttpMethod.POST, url, data, auth);
   }
 
-  public static HttpResponse<String> request(String url, String method, String data, String auth) {
-    try {
-      // Disable host name verification Globally
-      Properties props = System.getProperties();
-      props.setProperty("jdk.internal.httpclient.disableHostnameVerification", Boolean.TRUE.toString());
+  public static Future<String> put(String url, JSObject data, String auth) {
+    return request(HttpMethod.PUT, url, data, auth);
+  }
 
-      if (client == null) {
-        client = HttpClient.newBuilder().sslContext(SSLContextUtils.getMySSLContext()).build();
+  public static Future<String> delete(String url, JSObject data, String auth) {
+    return request(HttpMethod.DELETE, url, data, auth);
+  }
+
+  public static void setVertx(Vertx vertx) {
+    HttpService.vertx = vertx;
+  }
+
+  public static Future<String> request(HttpMethod method, String url, JSObject data, String auth) {
+    if (client == null) {
+      if (vertx == null) {
+        vertx = Vertx.vertx(DocsConfig.vertxOptions);
       }
+      client = WebClient.create(vertx, options);
+    }
 
-      Builder reqBuilder = HttpRequest
-          .newBuilder()
-          .uri(URI.create(url))
-          .timeout(Duration.ofMinutes(1))
-          .setHeader("Content-Type", "application/json")
-          .setHeader("Accept", "application/json");
+    HttpRequest<Buffer> request = null;
+    if (method == HttpMethod.GET) {
+      request = client.getAbs(url);
+    } else if (method == HttpMethod.POST) {
+      request = client.postAbs(url);
+    } else if (method == HttpMethod.PUT) {
+      request = client.putAbs(url);
+    } else if (method == HttpMethod.DELETE) {
+      request = client.deleteAbs(url);
+    } else {
+      request = client.getAbs(url);
+    }
 
-      if (auth != null) {
-        reqBuilder.header("authorization", auth);
-      }
+    if (auth != null) {
+      request.putHeader("authorization", auth);
+    }
+    // Cookie
+    if (auth != null && cookiesCache.getIfPresent(auth) != null) {
+      request.putHeader("Cookie", cookiesCache.getIfPresent(auth));
+    }
+    if (data != null) {
+      request.putHeader("Content-Type", "application/json");
+      request.putHeader("Accept", "application/json");
+      request.sendJson(data);
+    }
+    Future<HttpResponse<Buffer>> response = request.send();
+
+    return response.compose(res -> {
       // Cookie
-      if (auth != null) {
-        if (cache.getIfPresent(auth) != null) {
-          reqBuilder.header("Cookie", cache.getIfPresent(auth));
-        }
-      }
-      log.debug("data:{}", data);
-
-      switch (method) {
-        case "GET":
-          reqBuilder.GET();
-          break;
-        case "POST":
-          if (data != null && !data.isBlank()) {
-            reqBuilder.POST(BodyPublishers.ofString(data));
-          }
-          break;
-        case "PUT":
-          if (data != null && !data.isBlank()) {
-            reqBuilder.PUT(BodyPublishers.ofString(data));
-          }
-          break;
-        case "DELETE":
-          reqBuilder.DELETE();
-          break;
-        default:
-          reqBuilder.GET();
-      }
-
-      HttpRequest request = reqBuilder.build();
-      HttpResponse<String> response = null;
-
-      response = client.send(request, BodyHandlers.ofString());
-
-      // Cookie
-      List<String> cookieResponse = response.headers().allValues("Set-Cookie");
+      List<String> cookies = res.cookies();
       List<String> cookieCache = new ArrayList<String>();
-      for (String cookie : cookieResponse) {
+      for (String cookie : cookies) {
         cookieCache.add(cookie.split(";")[0]);
       }
       if (auth != null) {
         String cookieStr = String.join(";", cookieCache);
-        cache.put(auth, cookieStr);
+        cookiesCache.put(auth, cookieStr);
         log.debug("cookie:{}", cookieStr);
 
         // save last cookie, for request need login
-        cache.put("LastCookie", cookieStr);
+        cookiesCache.put("LastCookie", cookieStr);
       }
 
-      log.debug("{}", response.statusCode());
-      log.debug(response.body());
+      log.debug("{} {}", method, url);
+      log.debug(res.body());
+      return Future.succeededFuture(res.bodyAsString());
+    }).onFailure(err -> {
+      log.error("HTTP {} request to {} failed: {}", method, url, err.getMessage());
+    });
 
-      return response;
-    } catch (Exception e) {
-      log.error(e.getMessage(), e);
-      return null;
-    }
   }
 
   /**
    * need "LastCookie" for any login
    */
-  public static byte[] getFile(String url) {
-    try {
-      // Disable host name verification Globally
-      Properties props = System.getProperties();
-      props.setProperty(
-          "jdk.internal.httpclient.disableHostnameVerification",
-          Boolean.TRUE.toString());
-
-      if (client == null) {
-        client = HttpClient.newBuilder().sslContext(SSLContextUtils.getMySSLContext()).build();
+  public static Future<Buffer> getFile(String url, String auth) {
+    if (client == null) {
+      if (vertx == null) {
+        vertx = Vertx.vertx();
       }
-
-      Builder reqBuilder = HttpRequest.newBuilder().uri(URI.create(url));
-
-      // Cookie
-      if (cache.getIfPresent("LastCookie") != null) {
-        reqBuilder.header("Cookie", cache.getIfPresent("LastCookie"));
-      }
-
-      reqBuilder.GET();
-
-      HttpRequest request = reqBuilder.build();
-      HttpResponse<byte[]> response = null;
-
-      response = client.send(request, BodyHandlers.ofByteArray());
-
-      return response.body();
-    } catch (Exception e) {
-      log.error(e.getMessage(), e);
-      return new byte[0];
+      client = WebClient.create(vertx, options);
     }
+
+    HttpRequest<Buffer> request = null;
+    request = client.getAbs(url);
+    if (auth != null) {
+      request.putHeader("authorization", auth);
+    }
+    // Cookie
+    if (auth != null && cookiesCache.getIfPresent(auth) != null) {
+      request.putHeader("Cookie", cookiesCache.getIfPresent(auth));
+    }
+    Future<HttpResponse<Buffer>> response = request.send();
+
+    return response.compose(res -> {
+      // Cookie
+      List<String> cookies = res.cookies();
+      List<String> cookieCache = new ArrayList<String>();
+      for (String cookie : cookies) {
+        cookieCache.add(cookie.split(";")[0]);
+      }
+      if (auth != null) {
+        String cookieStr = String.join(";", cookieCache);
+        cookiesCache.put(auth, cookieStr);
+        log.debug("cookie:{}", cookieStr);
+
+        // save last cookie, for request need login
+        cookiesCache.put("LastCookie", cookieStr);
+      }
+
+      return Future.succeededFuture(res.body());
+    });
   }
 
 }

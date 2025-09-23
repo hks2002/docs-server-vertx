@@ -2,9 +2,10 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-28 00:03:05                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-08-13 16:59:18                                                                       *
+ * @LastEditDate          : 2025-09-19 00:07:16                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
+
 
 package com.da.docs.service;
 
@@ -21,6 +22,8 @@ import javax.naming.directory.InitialDirContext;
 import javax.naming.directory.SearchControls;
 import javax.naming.directory.SearchResult;
 
+import com.da.docs.config.DocsConfig;
+
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
 import lombok.extern.log4j.Log4j2;
@@ -32,22 +35,20 @@ public class ADServices {
    * Authenticates a user against an Active Directory server and retrieves user
    * information.
    *
-   * @param adServerUrl    The URL of the AD server (LDAP URL)
-   * @param adServerDomain The domain name of the AD server
-   * @param searchBase     The base DN for searching users in AD
-   * @param username       The username to authenticate
-   * @param password       The password for authentication
+   * @param username The username to authenticate
+   * @param password The password for authentication
    * @return A Future containing a JsonObject with user details (login_name,
    *         first_name, last_name, email, full_name)
    *         if authentication succeeds, or a failed Future if authentication
    *         fails
    */
   public Future<JsonObject> adAuthorization(
-      String adServerUrl,
-      String adServerDomain,
-      String searchBase,
       String username,
       String password) {
+    JsonObject adConfig = DocsConfig.handleConfig.getJsonObject("adServer", new JsonObject());
+    String adServerUrl = adConfig.getString("url");
+    String adServerDomain = adConfig.getString("domain");
+    String searchBase = adConfig.getString("searchBase");
 
     Hashtable<String, String> env = new Hashtable<>();
     env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
@@ -59,7 +60,7 @@ public class ADServices {
     // Skip SSL verification if using LDAPS
     // hostname verification still works, so must using a valid full hostname
     if (adServerUrl.toLowerCase().startsWith("ldaps")) {
-      env.put("java.naming.ldap.factory.socket", "com.da.docs.utils.TrustAllSSLSocketFactory");
+      env.put("java.naming.ldap.factory.socket", "com.da.docs.ssl.TrustAllSSLSocketFactory");
     }
 
     DirContext dirCtx = null;

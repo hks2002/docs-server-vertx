@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-10 01:05:38                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-07-13 12:44:24                                                                       *
+ * @LastEditDate          : 2025-09-18 19:04:02                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
@@ -34,7 +34,7 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 @GetMapping("/docs-api/searchDocsFromTLSOLD")
 public class SearchDocsFromTLSOLDHandler implements Handler<RoutingContext> {
-  public SearchDocsFromTLSOLDHandler(JsonObject config) {
+  public SearchDocsFromTLSOLDHandler() {
   }
 
   @Override
