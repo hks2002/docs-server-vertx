@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-28 00:03:05                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-09-19 00:07:16                                                                       *
+ * @LastEditDate          : 2025-09-23 18:21:37                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
@@ -22,7 +22,7 @@ import javax.naming.directory.InitialDirContext;
 import javax.naming.directory.SearchControls;
 import javax.naming.directory.SearchResult;
 
-import com.da.docs.config.DocsConfig;
+import com.da.docs.VertxHolder;
 
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
@@ -45,7 +45,7 @@ public class ADServices {
   public Future<JsonObject> adAuthorization(
       String username,
       String password) {
-    JsonObject adConfig = DocsConfig.handleConfig.getJsonObject("adServer", new JsonObject());
+    JsonObject adConfig = VertxHolder.appConfig.getJsonObject("adServer", new JsonObject());
     String adServerUrl = adConfig.getString("url");
     String adServerDomain = adConfig.getString("domain");
     String searchBase = adConfig.getString("searchBase");

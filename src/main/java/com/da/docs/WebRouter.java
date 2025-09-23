@@ -2,10 +2,9 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                            *
  * @CreatedDate           : 2025-03-28 00:21:32                                                                      *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                            *
- * @LastEditDate          : 2025-09-18 15:29:21                                                                      *
+ * @LastEditDate          : 2025-09-23 22:00:02                                                                      *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                          *
  ********************************************************************************************************************/
-
 
 package com.da.docs;
 
@@ -26,7 +25,6 @@ import com.da.docs.utils.PackageUtils;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
-import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.FaviconHandler;
@@ -101,38 +99,26 @@ public class WebRouter extends RouterImpl {
     }
   }
 
-  private Object getHandlerInstance(Class<?> clazz, Vertx vertx, JsonObject handlerConfig) {
+  private Object getHandlerInstance(Class<?> clazz) {
     Constructor<?> constructor = null;
     try {
-      constructor = getConstructor(clazz, Vertx.class, JsonObject.class);
-      if (constructor != null) {
-        return constructor.newInstance(vertx, handlerConfig);
-      }
-
-      constructor = getConstructor(clazz, JsonObject.class);
-      if (constructor != null) {
-        return constructor.newInstance(handlerConfig);
-      }
-
       constructor = getConstructor(clazz);
       return constructor.newInstance();
-
     } catch (Exception e) {
       log.error("{}", e);
       return null;
     }
   }
 
-  private void registerGlobalHandler(Vertx vertx) {
-    var handlerConfig = vertx.getOrCreateContext().config().getJsonObject("handler");
-    var uploadConfig = handlerConfig.getJsonObject("upload");
+  private void registerGlobalHandler() {
+    var uploadConfig = VertxHolder.appConfig.getJsonObject("upload");
     BodyHandler bodyHandler = BodyHandler.create();
-    bodyHandler.setUploadsDirectory(vertx.fileSystem().createTempDirectoryBlocking(""));
+    bodyHandler.setUploadsDirectory(VertxHolder.fs.createTempDirectoryBlocking(""));
     bodyHandler.setDeleteUploadedFilesOnEnd(false);
     bodyHandler.setBodyLimit(uploadConfig.getInteger("bodyLimit", -1));
 
-    var sessionConfig = handlerConfig.getJsonObject("session");
-    SessionHandlerImpl sessionHandler = new SessionHandlerImpl(LocalSessionStore.create(vertx));
+    var sessionConfig = VertxHolder.appConfig.getJsonObject("session");
+    SessionHandlerImpl sessionHandler = new SessionHandlerImpl(LocalSessionStore.create(VertxHolder.vertx));
     sessionHandler.setSessionTimeout(sessionConfig.getLong("sessionTimeout", SessionHandler.DEFAULT_SESSION_TIMEOUT));
     sessionHandler.setCookieHttpOnlyFlag(sessionConfig.getBoolean("cookieHttpOnly", true));
     sessionHandler.setCookieSecureFlag(sessionConfig.getBoolean("cookieSecure", true));
@@ -144,14 +130,13 @@ public class WebRouter extends RouterImpl {
   }
 
   @SuppressWarnings("unchecked")
-  private void registerAllPathHandler(Vertx vertx) {
-    var handlerConfig = vertx.getOrCreateContext().config().getJsonObject("handler");
+  private void registerAllPathHandler() {
     var routeHandler = getAllPathHandler("com.da.docs.handler");
 
     routeHandler.forEach(handlerClass -> {
       log.info("{}", handlerClass);
 
-      Object handlerInstance = getHandlerInstance(handlerClass, vertx, handlerConfig);
+      Object handlerInstance = getHandlerInstance(handlerClass);
       if (Handler.class.isAssignableFrom(handlerClass)) {
         super.route().handler((Handler<RoutingContext>) handlerInstance);
       } else {
@@ -161,15 +146,14 @@ public class WebRouter extends RouterImpl {
   }
 
   @SuppressWarnings("unchecked")
-  private void registerPathHandler(Vertx vertx) {
-    var handlerConfig = vertx.getOrCreateContext().config().getJsonObject("handler");
+  private void registerPathHandler() {
     var pathsHandler = getPathHandler("com.da.docs.handler");
 
     pathsHandler.forEach((path, handler) -> {
       log.info("{} {} {}", handler.getKey(), path, handler.getValue());
       HttpMethod method = handler.getKey();
       Class<?> handlerClass = handler.getValue();
-      Object handlerInstance = getHandlerInstance(handlerClass, vertx, handlerConfig);
+      Object handlerInstance = getHandlerInstance(handlerClass);
 
       if (Handler.class.isAssignableFrom(handlerClass)) {
         super.route(method, path).handler((Handler<RoutingContext>) handlerInstance);
@@ -187,9 +171,9 @@ public class WebRouter extends RouterImpl {
 
   public WebRouter(Vertx vertx) {
     super(vertx);
-    registerGlobalHandler(vertx);
-    registerAllPathHandler(vertx);
-    registerPathHandler(vertx);
+    registerGlobalHandler();
+    registerAllPathHandler();
+    registerPathHandler();
   }
 
 }

@@ -2,14 +2,12 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                            *
  * @CreatedDate           : 2025-05-19 16:54:08                                                                      *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                            *
- * @LastEditDate          : 2025-09-19 11:19:43                                                                      *
+ * @LastEditDate          : 2025-09-23 19:07:06                                                                      *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                          *
  ********************************************************************************************************************/
 
 
 package com.da.docs;
-
-import com.da.docs.config.DocsConfig;
 
 import io.vertx.config.ConfigRetriever;
 import io.vertx.config.ConfigRetrieverOptions;
@@ -28,12 +26,15 @@ public class VertxAppHooks implements VertxApplicationHooks {
   @Override
   public VertxBuilder createVertxBuilder(VertxOptions options) {
     log.info("VertxOptions:\n{}", options.toJson().encodePrettily());
-    DocsConfig.vertxOptions = options;
+    VertxHolder.vertxOptions = options;
     return Vertx.builder().with(options);
   }
 
   @Override
   public void beforeDeployingVerticle(HookContext context) {
+    VertxHolder.vertx = context.vertx();
+    VertxHolder.fs = context.vertx().fileSystem();
+
     ConfigRetrieverOptions retrieveOptions = new ConfigRetrieverOptions();
 
     retrieveOptions.addStore(new ConfigStoreOptions().setOptional(true).setType("file")
@@ -56,7 +57,7 @@ public class VertxAppHooks implements VertxApplicationHooks {
         deploymentConfig.put(k, v);
       });
 
-      DocsConfig.handleConfig = deploymentConfig.getJsonObject("handler");
+      VertxHolder.appConfig = deploymentConfig;
 
       log.info("Final Config: \n{}",
           deploymentConfig.encodePrettily()
@@ -70,8 +71,7 @@ public class VertxAppHooks implements VertxApplicationHooks {
 
   @Override
   public void afterVerticleDeployed(HookContext context) {
-    VertxHolder.vertx = context.vertx();
-    VertxHolder.fs = context.vertx().fileSystem();
+
   }
 
   @Override

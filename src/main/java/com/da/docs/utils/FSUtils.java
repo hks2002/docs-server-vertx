@@ -1,10 +1,10 @@
-/**********************************************************************************************************************
- * @Author                : Robert Huang<56649783@qq.com>                                                             *
- * @CreatedDate           : 2025-03-09 23:29:08                                                                       *
- * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-09-22 20:23:08                                                                       *
- * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
- *********************************************************************************************************************/
+/*********************************************************************************************************************
+ * @Author                : Robert Huang<56649783@qq.com>                                                            *
+ * @CreatedDate           : 2025-03-09 23:29:08                                                                      *
+ * @LastEditors           : Robert Huang<56649783@qq.com>                                                            *
+ * @LastEditDate          : 2025-09-23 18:32:12                                                                      *
+ * @CopyRight             : Dedienne Aerospace China ZhuHai                                                          *
+ ********************************************************************************************************************/
 
 
 package com.da.docs.utils;
@@ -23,7 +23,6 @@ import java.util.List;
 import org.bouncycastle.util.encoders.Hex;
 
 import com.da.docs.VertxHolder;
-import com.da.docs.config.DocsConfig;
 import com.da.docs.service.DocsService;
 
 import io.vertx.core.Future;
@@ -35,10 +34,11 @@ import lombok.extern.log4j.Log4j2;
 
 @Log4j2
 public class FSUtils {
+  private static JsonObject config = VertxHolder.appConfig;
   private static JsonObject docsConfig = Utils.isWindows()
-      ? DocsConfig.handleConfig.getJsonObject("docs").getJsonObject("windows")
-      : DocsConfig.handleConfig.getJsonObject("docs").getJsonObject("linux");
-  private static JsonObject uploadConfig = DocsConfig.handleConfig.getJsonObject("upload", new JsonObject());
+      ? config.getJsonObject("docs").getJsonObject("windows")
+      : config.getJsonObject("docs").getJsonObject("linux");
+  private static JsonObject uploadConfig = config.getJsonObject("upload", new JsonObject());
   private static String docsRoot = docsConfig.getString("docsRoot", Utils.isWindows() ? "c:/docs" : "/mnt/docs");
   private static int folderDeep = uploadConfig.getInteger("folderDeep", 0);;
   private static int folderLen = uploadConfig.getInteger("folderLen", 3);

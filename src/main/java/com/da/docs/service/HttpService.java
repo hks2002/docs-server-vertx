@@ -2,9 +2,10 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                            *
  * @CreatedDate           : 2022-03-26 17:57:07                                                                      *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                            *
- * @LastEditDate          : 2025-09-18 20:04:12                                                                      *
+ * @LastEditDate          : 2025-09-23 18:25:28                                                                      *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                          *
  ********************************************************************************************************************/
+
 
 package com.da.docs.service;
 
@@ -12,7 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import com.da.docs.config.DocsConfig;
+import com.da.docs.VertxHolder;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
@@ -65,7 +66,7 @@ public class HttpService {
   public static Future<String> request(HttpMethod method, String url, JSObject data, String auth) {
     if (client == null) {
       if (vertx == null) {
-        vertx = Vertx.vertx(DocsConfig.vertxOptions);
+        vertx = Vertx.vertx(VertxHolder.vertxOptions);
       }
       client = WebClient.create(vertx, options);
     }

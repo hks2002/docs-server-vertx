@@ -5,53 +5,51 @@
     "compressionLevel": 6,
     "decompressionSupported": true
   },
-  "handler": {
-    "session": {
-      "sessionTimeout": 3600000
+  "session": {
+    "sessionTimeout": 3600000
+  },
+  "docs": {
+    "windows": {
+      "docsRoot": "c:/docs"
     },
-    "docs": {
-      "windows": {
-        "docsRoot": "c:/docs"
-      },
-      "linux": {
-        "docsRoot": "/mnt/docs"
-      },
-      "waterMark": {
-        "enable": true,
-        "showCompany": true,
-        "showBP": true,
-        "showUser": true,
-        "companyName": "DEDIENNE",
-        "fileTypes": [
-          "pdf",
-          "jpg",
-          "jpeg",
-          "png",
-          "bmp",
-          "gif"
-        ],
-        "excludeNames": [
-          "TDS",
-          "OMSD",
-          "GIM",
-          "NOTICE",
-          "GUIDE",
-          "MANUAL"
-        ]
-      },
-      "saveWithDocName": false
+    "linux": {
+      "docsRoot": "/mnt/docs"
     },
-    "upload": {
-      "bodyLimit": -1,
-      "folderDeep": 2,
-      "folderLen": 3
+    "waterMark": {
+      "enable": true,
+      "showCompany": true,
+      "showBP": true,
+      "showUser": true,
+      "companyName": "DEDIENNE",
+      "fileTypes": [
+        "pdf",
+        "jpg",
+        "jpeg",
+        "png",
+        "bmp",
+        "gif"
+      ],
+      "excludeNames": [
+        "TDS",
+        "OMSD",
+        "GIM",
+        "NOTICE",
+        "GUIDE",
+        "MANUAL"
+      ]
     },
-    "dmsServer": "http://127.0.0.1:4040",
-    "adServer": {
-      "url": "ldap://127.0.0.1:389",
-      "domain": "docs.com",
-      "searchBase": "OU=User,DC=docs,DC=com"
-    }
+    "saveWithDocName": false
+  },
+  "upload": {
+    "bodyLimit": -1,
+    "folderDeep": 2,
+    "folderLen": 3
+  },
+  "dmsServer": "http://127.0.0.1:4040",
+  "adServer": {
+    "url": "ldap://127.0.0.1:389",
+    "domain": "docs.com",
+    "searchBase": "OU=User,DC=docs,DC=com"
   },
   "mysql": {
     "jdbcUrl": "jdbc:mysql://localhost/docs",

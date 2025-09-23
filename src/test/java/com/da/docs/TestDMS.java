@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                            *
  * @CreatedDate           : 2025-03-21 19:32:00                                                                      *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                            *
- * @LastEditDate          : 2025-09-22 19:50:40                                                                      *
+ * @LastEditDate          : 2025-09-23 18:14:33                                                                      *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                          *
  ********************************************************************************************************************/
 
@@ -25,7 +25,9 @@ public class TestDMS {
 
   @Test
   void test2(Vertx vertx, VertxTestContext testContext) throws Throwable {
-    log.info("Test DMSServices2");
+    log.info("Test DMSServices");
+    DMSServices.setDmsServer("http://192.168.0.247:4040");
+
     DMSServices.getDocumentNames("956A1001G01").onSuccess(result -> {
       log.info("getDocuments: {}", result);
     }).onFailure(e -> {

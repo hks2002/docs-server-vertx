@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                            *
  * @CreatedDate           : 2025-05-11 00:19:27                                                                      *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                            *
- * @LastEditDate          : 2025-09-23 12:52:40                                                                      *
+ * @LastEditDate          : 2025-09-23 22:28:54                                                                      *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                          *
  ********************************************************************************************************************/
 
@@ -23,7 +23,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.da.docs.VertxHolder;
-import com.da.docs.config.DocsConfig;
 import com.da.docs.utils.FSUtils;
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -39,7 +38,7 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 public class DMSServices {
 
-  private static String dmsServer = DocsConfig.handleConfig.getString("dmsServer");
+  private static String dmsServer = VertxHolder.appConfig.getString("dmsServer");
   private static CacheLoader<String, String> cacheLoader = new CacheLoader<String, String>() {
     @Override
     public String load(String key) {
@@ -68,6 +67,10 @@ public class DMSServices {
       .expireAfterAccess(15, TimeUnit.MINUTES)
       .removalListener(removalListener)
       .build(cacheLoader);
+
+  public static void setDmsServer(String dmsServer) {
+    DMSServices.dmsServer = dmsServer;
+  }
 
   /**
    * Login to DMS system, get session ID and save it to cache
@@ -221,6 +224,7 @@ public class DMSServices {
   private static Future<String> getFileInfo(String FileName) {
     String sessionId = dmsSessionCache.get("SessionId");
     String search = base64Encode(FileName);
+
     String url = String.format(
         dmsServer + "/cocoon/View/ExecuteService/fr/AW_QuickSearchView7.post?" +
             "ServiceName=aws.au&ServiceParameters=GET_OBJECTS_LIST@SEARCH@%s@@@0@9999@0@&ServiceSubPackage=aws&URL_Encoding=UTF-8&date_format=enDateHour&AUSessionID=%s",

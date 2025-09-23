@@ -2,9 +2,10 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                            *
  * @CreatedDate           : 2025-03-10 01:05:38                                                                      *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                            *
- * @LastEditDate          : 2025-09-18 14:55:05                                                                      *
+ * @LastEditDate          : 2025-09-23 22:03:09                                                                      *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                          *
  ********************************************************************************************************************/
+
 
 package com.da.docs.handler;
 
@@ -20,8 +21,8 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
+import com.da.docs.VertxHolder;
 import com.da.docs.annotation.GetMapping;
-import com.da.docs.config.DocsConfig;
 import com.da.docs.service.LogService;
 import com.da.docs.utils.CommonUtils;
 import com.da.docs.utils.ITextTools;
@@ -73,11 +74,12 @@ public class DocsHandler implements Handler<RoutingContext> {
 
   public DocsHandler() {
     JsonObject docsConfig = Utils.isWindows()
-        ? DocsConfig.handleConfig.getJsonObject("docs").getJsonObject("windows")
-        : DocsConfig.handleConfig.getJsonObject("docs").getJsonObject("linux");
+        ? VertxHolder.appConfig.getJsonObject("docs").getJsonObject("windows")
+        : VertxHolder.appConfig.getJsonObject("docs").getJsonObject("linux");
     this.docsRoot = docsConfig.getString("docsRoot", docsRoot);
 
-    JsonObject waterMarkConfig = DocsConfig.handleConfig.getJsonObject("docs").getJsonObject("waterMark");
+    JsonObject waterMarkConfig = VertxHolder.appConfig.getJsonObject("docs")
+        .getJsonObject("waterMark");
     this.waterMarkEnable = waterMarkConfig.getBoolean("enable", waterMarkEnable);
     this.showCompany = waterMarkConfig.getBoolean("showCompany", showCompany);
     this.showBP = waterMarkConfig.getBoolean("showBP", showBP);
@@ -95,7 +97,8 @@ public class DocsHandler implements Handler<RoutingContext> {
       waterMakerExcludeNames.add(excludeName.toUpperCase());
     }
 
-    this.saveWithDocName = DocsConfig.handleConfig.getJsonObject("docs").getBoolean("saveWithDocName", true);
+    this.saveWithDocName = VertxHolder.appConfig.getJsonObject("docs")
+        .getBoolean("saveWithDocName", true);
   }
 
   @Override
