@@ -2,9 +2,10 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-10 01:05:38                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-09-18 20:13:24                                                                       *
+ * @LastEditDate          : 2025-09-25 13:40:05                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
+
 
 package com.da.docs.handler;
 
@@ -13,7 +14,9 @@ import com.da.docs.service.UserAccessLogService;
 import com.da.docs.utils.Response;
 
 import io.vertx.core.Handler;
+import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.auth.User;
 import io.vertx.ext.web.RoutingContext;
@@ -30,21 +33,21 @@ public class SearchUserAccessLogHandler implements Handler<RoutingContext> {
   public void handle(RoutingContext context) {
     HttpServerRequest request = context.request();
 
-    String limit = request.getParam("limit", "100");
-    String offset = request.getParam("offset", "0");
+    Integer limit = Integer.parseInt(request.getParam("limit", "100"));
+    Integer offset = Integer.parseInt(request.getParam("offset", "0"));
     User u = context.user();
     UserAccessLogService userAccessLogService = new UserAccessLogService();
 
     userAccessLogService
         .searchUserAccessLogByLoginName(
-            JsonObject.of("login_name", u.principal().getString("offset"), "limit", limit, "offset", offset))
+            JsonObject.of("login_name", u.principal().getString("login_name"), "limit", limit, "offset", offset))
         .onSuccess(list -> {
-          if (list.isEmpty()) {
-            Response.notFound(context, "No BP found");
-            return;
-          } else {
-            Response.success(context, list);
+          JsonArray json = new JsonArray();
+          for (JsonObject o : list) {
+            o.put("location", "docs-api/docs/" + o.getString("location"));
+            json.add(o);
           }
+          context.response().putHeader(HttpHeaders.CONTENT_TYPE, "application/json;charset=UTF-8").end(json.encode());
         })
         .onFailure(ar -> {
           log.error("{}", ar.getMessage());

@@ -1,11 +1,11 @@
 WITH T0 AS (
 	SELECT 
-	  v3 AS filename,
+	  v3 AS file_name,
 	  log_at AS access_time,
 	  ROW_NUMBER() OVER (PARTITION BY v3, DATE(log_at) ORDER BY log_at DESC) AS rn
 	FROM log
 	WHERE log.template_id = 9 
-	AND v1 = '#{loginName}'
+	AND v1 = '#{login_name}'
 	ORDER BY id DESC
 )
 
