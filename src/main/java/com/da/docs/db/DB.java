@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-20 11:15:15                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-07-11 09:17:30                                                                       *
+ * @LastEditDate          : 2025-10-03 17:52:44                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
@@ -151,12 +151,12 @@ public class DB {
         return Future.succeededFuture(list);
 
       } catch (Exception e) {
-        log.error("{}\n\n{}\n\n{}\n", e.getMessage(), sqlTemplate, json.encodePrettily());
+        log.error("{}\n\n{}\n\n{}\n", e.getCause(), sqlTemplate, json.encodePrettily());
         if (conn != null) {
           try {
             conn.close();
           } catch (SQLException e1) {
-            log.error("Failed to close connection: {}", e1.getMessage());
+            log.error("Failed to close connection: {}", e1.getCause());
           }
         }
         return Future.failedFuture("Run SQL error");
@@ -172,7 +172,7 @@ public class DB {
   public static Future<List<JsonObject>> queryByFile(String sqlFileName, JsonObject json, int dbIdx) {
     return fs.readFile("sqlTemplate/" + sqlFileName + ".sql")
         .onFailure(ar -> {
-          log.error("{}", ar.getMessage());
+          log.error("{}", ar.getCause());
         })
         .compose(sqlTemplate -> {
           return queryBySql(sqlTemplate.toString(), json, dbIdx);
@@ -204,12 +204,12 @@ public class DB {
         }
         return Future.succeededFuture(rs);
       } catch (Exception e) {
-        log.error("{}\n{}\n{}\n", e.getMessage(), sqlTemplate, json.encodePrettily());
+        log.error("{}\n{}\n{}\n", e.getCause(), sqlTemplate, json.encodePrettily());
         if (conn != null) {
           try {
             conn.close();
           } catch (SQLException e1) {
-            log.error("Failed to close connection: {}", e1.getMessage());
+            log.error("Failed to close connection: {}", e1.getCause());
           }
         }
         return Future.failedFuture("Run SQL error");
@@ -225,7 +225,7 @@ public class DB {
   public static Future<Object> insertByFile(String sqlFileName, JsonObject json, int dbIdx) {
     return fs.readFile("sqlTemplate/" + sqlFileName + ".sql")
         .onFailure(ar -> {
-          log.error("{}", ar.getMessage());
+          log.error("{}", ar.getCause());
         })
         .compose(sqlTemplate -> {
           return insertBySql(sqlTemplate.toString(), json, dbIdx);
@@ -252,12 +252,12 @@ public class DB {
         log.trace("{}\n\n{}\n", sqlTemplate, rs);
         return Future.succeededFuture(rs);
       } catch (Exception e) {
-        log.error("{}\n{}\n{}\n", e.getMessage(), sqlTemplate, json.encodePrettily());
+        log.error("{}\n{}\n{}\n", e.getCause(), sqlTemplate, json.encodePrettily());
         if (conn != null) {
           try {
             conn.close();
           } catch (SQLException e1) {
-            log.error("Failed to close connection: {}", e1.getMessage());
+            log.error("Failed to close connection: {}", e1.getCause());
           }
         }
         return Future.failedFuture("Run SQL error");
@@ -273,7 +273,7 @@ public class DB {
   public static Future<Object> updateByFile(String sqlFileName, JsonObject json, int dbIdx) {
     return fs.readFile("sqlTemplate/" + sqlFileName + ".sql")
         .onFailure(ar -> {
-          log.error("{}", ar.getMessage());
+          log.error("{}", ar.getCause());
         })
         .compose(sqlTemplate -> {
           return updateBySql(sqlTemplate.toString(), json, dbIdx);
@@ -300,12 +300,12 @@ public class DB {
         }
         return Future.succeededFuture(rs);
       } catch (Exception e) {
-        log.error("{}\n{}\n{}\n", e.getMessage(), sqlTemplate, json.encodePrettily());
+        log.error("{}\n{}\n{}\n", e.getCause(), sqlTemplate, json.encodePrettily());
         if (conn != null) {
           try {
             conn.close();
           } catch (SQLException e1) {
-            log.error("Failed to close connection: {}", e1.getMessage());
+            log.error("Failed to close connection: {}", e1.getCause());
           }
         }
         return Future.failedFuture("Run SQL error");
@@ -321,7 +321,7 @@ public class DB {
   public static Future<Object> deleteByFile(String sqlFileName, JsonObject json, int dbIdx) {
     return fs.readFile("sqlTemplate/" + sqlFileName + ".sql")
         .onFailure(ar -> {
-          log.error("{}", ar.getMessage());
+          log.error("{}", ar.getCause());
         })
         .compose(sqlTemplate -> {
           return deleteBySql(sqlTemplate.toString(), json, dbIdx);

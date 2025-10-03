@@ -2,10 +2,9 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                            *
  * @CreatedDate           : 2025-05-19 16:54:08                                                                      *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                            *
- * @LastEditDate          : 2025-09-23 19:07:06                                                                      *
+ * @LastEditDate          : 2025-10-03 18:03:17                                                                      *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                          *
  ********************************************************************************************************************/
-
 
 package com.da.docs;
 
@@ -41,8 +40,9 @@ public class VertxAppHooks implements VertxApplicationHooks {
         .setConfig(JsonObject.of("path", "config.json")));
     retrieveOptions.addStore(new ConfigStoreOptions().setOptional(true).setType("file")
         .setConfig(JsonObject.of("path", "config-prod.json")));
-    retrieveOptions.addStore(new ConfigStoreOptions().setOptional(true).setType("file")
-        .setConfig(JsonObject.of("path", "config-test.json")));
+    // retrieveOptions.addStore(new
+    // ConfigStoreOptions().setOptional(true).setType("file")
+    // .setConfig(JsonObject.of("path", "config-test.json")));
     ConfigRetriever cfgRetriever = ConfigRetriever.create(context.vertx(), retrieveOptions);
 
     try {

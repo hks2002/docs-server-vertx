@@ -2,10 +2,9 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-28 00:03:05                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-09-23 18:21:37                                                                       *
+ * @LastEditDate          : 2025-10-03 17:50:08                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
-
 
 package com.da.docs.service;
 
@@ -42,10 +41,9 @@ public class ADServices {
    *         if authentication succeeds, or a failed Future if authentication
    *         fails
    */
-  public Future<JsonObject> adAuthorization(
-      String username,
-      String password) {
-    JsonObject adConfig = VertxHolder.appConfig.getJsonObject("adServer", new JsonObject());
+  public Future<JsonObject> adAuthorization(String username, String password) {
+    JsonObject appConfig = VertxHolder.appConfig != null ? VertxHolder.appConfig : new JsonObject();
+    JsonObject adConfig = appConfig.getJsonObject("adServer", new JsonObject());
     String adServerUrl = adConfig.getString("url");
     String adServerDomain = adConfig.getString("domain");
     String searchBase = adConfig.getString("searchBase");
@@ -115,7 +113,7 @@ public class ADServices {
         try {
           dirCtx.close();
         } catch (NamingException e) {
-          log.error("{}", e);
+          log.error("{}", e.getCause());
         }
       }
     }
