@@ -2,10 +2,9 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                            *
  * @CreatedDate           : 2025-03-10 01:05:38                                                                      *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                            *
- * @LastEditDate          : 2025-09-19 13:50:50                                                                      *
+ * @LastEditDate          : 2025-10-03 15:41:34                                                                      *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                          *
  ********************************************************************************************************************/
-
 
 package com.da.docs.handler;
 
@@ -52,8 +51,9 @@ public class SearchDocsFromTLSNEWHandler implements Handler<RoutingContext> {
     HttpServerResponse response = context.response();
 
     String PN = request.getParam("PN").toUpperCase();
+    DMSServices dmsServices = new DMSServices();
 
-    DMSServices.getDocuments(PN)
+    dmsServices.getDocuments(PN)
         .onSuccess(docs -> {
           response.putHeader(HttpHeaders.CONTENT_TYPE, "application/json");
           if (docs.size() > 0) {

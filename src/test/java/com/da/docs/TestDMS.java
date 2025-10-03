@@ -2,10 +2,9 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                            *
  * @CreatedDate           : 2025-03-21 19:32:00                                                                      *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                            *
- * @LastEditDate          : 2025-09-23 18:14:33                                                                      *
+ * @LastEditDate          : 2025-10-03 16:53:27                                                                      *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                          *
  ********************************************************************************************************************/
-
 
 package com.da.docs;
 
@@ -26,17 +25,17 @@ public class TestDMS {
   @Test
   void test2(Vertx vertx, VertxTestContext testContext) throws Throwable {
     log.info("Test DMSServices");
-    DMSServices.setDmsServer("http://192.168.0.247:4040");
+    DMSServices dmsServices = new DMSServices();
+    dmsServices.setDmsServer("http://192.168.0.247:4040");
 
-    DMSServices.getDocumentNames("956A1001G01").onSuccess(result -> {
+    dmsServices.getDocuments("956A1001G01").onSuccess(result -> {
       log.info("getDocuments: {}", result);
     }).onFailure(e -> {
       log.error("Error: ", e);
-    });
-
-    vertx.setTimer(4000, id -> {
+    }).andThen(r -> {
       testContext.completeNow();
     });
+
   }
 
 }

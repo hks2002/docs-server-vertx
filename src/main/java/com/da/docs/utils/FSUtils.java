@@ -2,10 +2,9 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                            *
  * @CreatedDate           : 2025-03-09 23:29:08                                                                      *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                            *
- * @LastEditDate          : 2025-09-23 18:32:12                                                                      *
+ * @LastEditDate          : 2025-10-03 17:47:48                                                                      *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                          *
  ********************************************************************************************************************/
-
 
 package com.da.docs.utils;
 
@@ -26,25 +25,30 @@ import com.da.docs.VertxHolder;
 import com.da.docs.service.DocsService;
 
 import io.vertx.core.Future;
+import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.file.FileProps;
+import io.vertx.core.file.FileSystem;
 import io.vertx.core.impl.Utils;
 import io.vertx.core.json.JsonObject;
 import lombok.extern.log4j.Log4j2;
 
 @Log4j2
 public class FSUtils {
-  private static JsonObject config = VertxHolder.appConfig;
+  private static FileSystem fs = VertxHolder.fs != null ? VertxHolder.fs : Vertx.vertx().fileSystem();
+  private static JsonObject appConfig = VertxHolder.appConfig != null ? VertxHolder.appConfig : new JsonObject();
+
   private static JsonObject docsConfig = Utils.isWindows()
-      ? config.getJsonObject("docs").getJsonObject("windows")
-      : config.getJsonObject("docs").getJsonObject("linux");
-  private static JsonObject uploadConfig = config.getJsonObject("upload", new JsonObject());
+      ? appConfig.getJsonObject("docs", new JsonObject()).getJsonObject("windows", new JsonObject())
+      : appConfig.getJsonObject("docs", new JsonObject()).getJsonObject("linux", new JsonObject());
   private static String docsRoot = docsConfig.getString("docsRoot", Utils.isWindows() ? "c:/docs" : "/mnt/docs");
+
+  private static JsonObject uploadConfig = appConfig.getJsonObject("upload", new JsonObject());
   private static int folderDeep = uploadConfig.getInteger("folderDeep", 0);;
   private static int folderLen = uploadConfig.getInteger("folderLen", 3);
 
   private static String computerMd5(String fileFullPath) {
-    Buffer buf = VertxHolder.fs.readFileBlocking(fileFullPath);
+    Buffer buf = fs.readFileBlocking(fileFullPath);
     try {
       MessageDigest md = MessageDigest.getInstance("MD5");
       byte[] bytes = buf.getBytes();
@@ -78,13 +82,13 @@ public class FSUtils {
   }
 
   public static boolean isFileExists(String toFileName) {
-    String toFolder = FSUtils.docsRoot;
+    String toFolder = docsRoot;
     // get the destination folder
-    String toSubFolder = CommonUtils.getPathByFileName(toFileName, FSUtils.folderDeep, FSUtils.folderLen);
+    String toSubFolder = CommonUtils.getPathByFileName(toFileName, folderDeep, folderLen);
     String toFolderFullPath = toFolder + '/' + toSubFolder;
     String toFileFullPath = toFolderFullPath + '/' + toFileName;
 
-    return VertxHolder.fs.existsBlocking(toFileFullPath);
+    return fs.existsBlocking(toFileFullPath);
   }
 
   /**
@@ -106,24 +110,23 @@ public class FSUtils {
       String fileId,
       String mode) {
 
-    if (!VertxHolder.fs.existsBlocking(fromFileFullPath)
-        || VertxHolder.fs.propsBlocking(fromFileFullPath).isDirectory()) {
+    if (!fs.existsBlocking(fromFileFullPath) || fs.propsBlocking(fromFileFullPath).isDirectory()) {
       log.error("[File] Source file is not a file: {}", fromFileFullPath);
       return Future.failedFuture("");
     }
-    String toFolder = FSUtils.docsRoot;
-    if (!VertxHolder.fs.existsBlocking(toFolder) || !VertxHolder.fs.propsBlocking(toFolder).isDirectory()) {
+    String toFolder = docsRoot;
+    if (!fs.existsBlocking(toFolder) || !fs.propsBlocking(toFolder).isDirectory()) {
       log.error("[File] Destination path is not a directory: {}", toFolder);
       return Future.failedFuture("");
     }
 
     try {
-      FileProps inProps = VertxHolder.fs.propsBlocking(fromFileFullPath);
+      FileProps inProps = fs.propsBlocking(fromFileFullPath);
       // get the destination folder
-      String toSubFolder = CommonUtils.getPathByFileName(toFileName, FSUtils.folderDeep, FSUtils.folderLen);
+      String toSubFolder = CommonUtils.getPathByFileName(toFileName, folderDeep, folderLen);
       String toFolderFullPath = toFolder + '/' + toSubFolder;
       String toLocation = toSubFolder + '/' + toFileName;
-      String md5 = FSUtils.computerMd5(fromFileFullPath);
+      String md5 = computerMd5(fromFileFullPath);
 
       LocalDateTime createAt = LocalDateTime.ofInstant(Instant.ofEpochMilli(inProps.creationTime()),
           ZoneId.systemDefault());
@@ -131,12 +134,12 @@ public class FSUtils {
           ZoneId.systemDefault());
 
       // make sure toFolder exists
-      if (!VertxHolder.fs.existsBlocking(toFolderFullPath)) {
+      if (!fs.existsBlocking(toFolderFullPath)) {
         log.trace("[File] Make dir: {}", toFolderFullPath);
-        VertxHolder.fs.mkdirsBlocking(toFolderFullPath);
+        fs.mkdirsBlocking(toFolderFullPath);
       }
       String toFileFullPath = toFolderFullPath + '/' + toFileName;
-      boolean fileExists = VertxHolder.fs.existsBlocking(toFileFullPath);
+      boolean fileExists = fs.existsBlocking(toFileFullPath);
       if (fileExists) {
         log.warn("[File] File already exists: {}", toFileFullPath);
       }
@@ -146,12 +149,12 @@ public class FSUtils {
         case "COPY":
           f_moveOrCopy = fileExists
               ? Future.succeededFuture()
-              : VertxHolder.fs.copy(fromFileFullPath, toFileFullPath);
+              : fs.copy(fromFileFullPath, toFileFullPath);
           break;
         case "MOVE":
           f_moveOrCopy = fileExists
               ? Future.succeededFuture()
-              : VertxHolder.fs.move(fromFileFullPath, toFileFullPath);
+              : fs.move(fromFileFullPath, toFileFullPath);
           break;
         case "INFO":
           f_moveOrCopy = Future.succeededFuture();
@@ -203,23 +206,23 @@ public class FSUtils {
       String fromFolder,
       String mode) {
 
-    if (!VertxHolder.fs.existsBlocking(fromFolder) || !VertxHolder.fs.propsBlocking(fromFolder).isDirectory()) {
+    if (!fs.existsBlocking(fromFolder) || !fs.propsBlocking(fromFolder).isDirectory()) {
       log.error("[Folders] Source path is not a directory: {}", fromFolder);
       return Future.failedFuture("Source path is not a directory: " + fromFolder);
     }
 
     String toFolder = FSUtils.docsRoot;
-    if (!VertxHolder.fs.existsBlocking(toFolder) || !VertxHolder.fs.propsBlocking(toFolder).isDirectory()) {
+    if (!fs.existsBlocking(toFolder) || !fs.propsBlocking(toFolder).isDirectory()) {
       log.error("[Folders] Destination path is not a directory: {}", toFolder);
       return Future.failedFuture("Destination path is not a directory: " + toFolder);
     }
 
-    List<String> fileList = VertxHolder.fs.readDirBlocking(fromFolder);
+    List<String> fileList = fs.readDirBlocking(fromFolder);
 
     try {
       for (int i = 0; i < fileList.size(); i++) {
         String fileInFolder = fileList.get(i);
-        FileProps inProps = VertxHolder.fs.propsBlocking(fileInFolder);
+        FileProps inProps = fs.propsBlocking(fileInFolder);
 
         if (inProps.isDirectory()) {
           log.info("[Folders] {}", fileInFolder);
