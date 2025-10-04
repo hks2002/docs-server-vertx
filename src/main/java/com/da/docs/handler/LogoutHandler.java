@@ -2,9 +2,10 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-16 11:51:49                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-07-17 11:14:16                                                                       *
+ * @LastEditDate          : 2025-10-04 15:19:50                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
+
 
 package com.da.docs.handler;
 
@@ -36,8 +37,7 @@ public class LogoutHandler implements Handler<RoutingContext> {
       String ip = CommonUtils.getTrueRemoteIp(request);
       String userName = u.principal().getString("login_name");
       String fullName = u.principal().getString("full_name");
-      LogService logService = new LogService();
-      logService.addLog("LOGOUT_SUCCESS", ip, userName, fullName);
+      LogService.addLog("LOGOUT_SUCCESS", ip, userName, fullName);
 
       switch (accept) {
         case "application/json":

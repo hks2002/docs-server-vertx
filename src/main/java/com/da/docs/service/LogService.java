@@ -2,9 +2,10 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-21 15:17:16                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-07-02 12:01:13                                                                       *
+ * @LastEditDate          : 2025-10-04 12:46:54                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
+
 
 package com.da.docs.service;
 
@@ -19,7 +20,7 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 public class LogService {
 
-  public Future<Object> addLog(
+  public static Future<Object> addLog(
       String TCode,
       String v0,
       String v1,
@@ -63,7 +64,7 @@ public class LogService {
         });
   }
 
-  public Future<Object> addLog(
+  public static Future<Object> addLog(
       String TCode,
       String v0,
       String v1,
@@ -77,7 +78,7 @@ public class LogService {
     return addLog(TCode, v0, v1, v2, v3, v4, v5, v6, v7, v8, null);
   }
 
-  public Future<Object> addLog(
+  public static Future<Object> addLog(
       String TCode,
       String v0,
       String v1,
@@ -90,7 +91,7 @@ public class LogService {
     return addLog(TCode, v0, v1, v2, v3, v4, v5, v6, v7, null, null);
   }
 
-  public Future<Object> addLog(
+  public static Future<Object> addLog(
       String TCode,
       String v0,
       String v1,
@@ -102,7 +103,7 @@ public class LogService {
     return addLog(TCode, v0, v1, v2, v3, v4, v5, v6, null, null, null);
   }
 
-  public Future<Object> addLog(
+  public static Future<Object> addLog(
       String TCode,
       String v0,
       String v1,
@@ -113,7 +114,7 @@ public class LogService {
     return addLog(TCode, v0, v1, v2, v3, v4, v5, null, null, null, null);
   }
 
-  public Future<Object> addLog(
+  public static Future<Object> addLog(
       String TCode,
       String v0,
       String v1,
@@ -123,23 +124,23 @@ public class LogService {
     return addLog(TCode, v0, v1, v2, v3, v4, null, null, null, null, null);
   }
 
-  public Future<Object> addLog(String TCode, String v0, String v1, String v2, String v3) {
+  public static Future<Object> addLog(String TCode, String v0, String v1, String v2, String v3) {
     return addLog(TCode, v0, v1, v2, v3, null, null, null, null, null, null);
   }
 
-  public Future<Object> addLog(String TCode, String v0, String v1, String v2) {
+  public static Future<Object> addLog(String TCode, String v0, String v1, String v2) {
     return addLog(TCode, v0, v1, v2, null, null, null, null, null, null, null);
   }
 
-  public Future<Object> addLog(String TCode, String v0, String v1) {
+  public static Future<Object> addLog(String TCode, String v0, String v1) {
     return addLog(TCode, v0, v1, null, null, null, null, null, null, null, null);
   }
 
-  public Future<Object> addLog(String TCode, String v0) {
+  public static Future<Object> addLog(String TCode, String v0) {
     return addLog(TCode, v0, null, null, null, null, null, null, null, null, null);
   }
 
-  public Future<Object> addLog(String TCode) {
+  public static Future<Object> addLog(String TCode) {
     return addLog(TCode, null, null, null, null, null, null, null, null, null, null);
   }
 }

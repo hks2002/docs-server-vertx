@@ -2,10 +2,9 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                            *
  * @CreatedDate           : 2025-08-06 11:43:23                                                                      *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                            *
- * @LastEditDate          : 2025-09-17 16:12:39                                                                      *
+ * @LastEditDate          : 2025-10-03 17:41:15                                                                      *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                          *
  ********************************************************************************************************************/
-
 
 package com.da.docs.ssl;
 
@@ -28,7 +27,7 @@ public class TrustAllSSLSocketFactory extends SSLSocketFactory {
   private SSLSocketFactory factory;
 
   public TrustAllSSLSocketFactory() {
-    log.info("TrustAllSSLSocketFactory initialized, all SSL certificates will be trusted.");
+    log.debug("TrustAllSSLSocketFactory initialized, all SSL certificates will be trusted.");
     try {
       SSLContext ctx = SSLContext.getInstance("TLS");
       ctx.init(null, new TrustManager[] { new X509TrustManager() {

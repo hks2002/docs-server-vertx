@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-04-02 16:48:46                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-09-22 18:37:35                                                                       *
+ * @LastEditDate          : 2025-10-04 15:16:50                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
@@ -21,8 +21,6 @@ import lombok.extern.log4j.Log4j2;
 
 @Log4j2
 public class DocsService {
-  private final LogService logService = new LogService();
-
   public Future<Object> addDocs(JsonObject obj) {
     return DB.insertByFile("insertDocs", obj);
   }
@@ -72,7 +70,7 @@ public class DocsService {
                 })
                 .onSuccess(ar3 -> {
                   log.trace("[File] Add doc: {}", fileName);
-                  logService.addLog("DOC_INFO_CREATE", "127.0.0.1", "system", "system", fileName, location, md5);
+                  LogService.addLog("DOC_INFO_CREATE", "127.0.0.1", "system", "system", fileName, location, md5);
                 })
                 .compose(ar3 -> {
                   return Future.succeededFuture();
@@ -89,7 +87,7 @@ public class DocsService {
                 })
                 .onSuccess(ar3 -> {
                   log.trace("[File] Modify doc: {}", fileName);
-                  logService.addLog("DOC_INFO_UPDATE", "127.0.0.1", "system", "system", fileName, location, md5);
+                  LogService.addLog("DOC_INFO_UPDATE", "127.0.0.1", "system", "system", fileName, location, md5);
                 })
                 .compose(ar3 -> {
                   return Future.succeededFuture();
@@ -107,7 +105,7 @@ public class DocsService {
                     })
                     .onSuccess(ar -> {
                       log.trace("[File] Modify doc: {}", fileName);
-                      logService.addLog("DOC_INFO_UPDATE", "127.0.0.1", "system", "system", fileName, md5);
+                      LogService.addLog("DOC_INFO_UPDATE", "127.0.0.1", "system", "system", fileName, md5);
                     }));
               } else {
                 f1.add(removeDocs(oldDocs)
@@ -116,7 +114,7 @@ public class DocsService {
                     })
                     .onSuccess(ar -> {
                       log.trace("[File] Remove doc: {}", fileName);
-                      logService.addLog("DOC_INFO_DELETE", "127.0.0.1", "system", "system", fileName, md5);
+                      LogService.addLog("DOC_INFO_DELETE", "127.0.0.1", "system", "system", fileName, md5);
                     }));
               }
             }

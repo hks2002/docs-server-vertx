@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                            *
  * @CreatedDate           : 2025-03-21 15:17:16                                                                      *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                            *
- * @LastEditDate          : 2025-09-19 11:01:13                                                                      *
+ * @LastEditDate          : 2025-10-04 15:18:03                                                                      *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                          *
  ********************************************************************************************************************/
 
@@ -25,8 +25,6 @@ import lombok.extern.log4j.Log4j2;
 
 @Log4j2
 public class UserService {
-
-  private final LogService logService = new LogService();
   private final ADServices adServices = new ADServices();
   private final UserFuncService userFuncService = new UserFuncService();
 
@@ -41,10 +39,10 @@ public class UserService {
 
     return addUser(userInfo)
         .onFailure(err -> {
-          logService.addLog("USER_INIT_FAILED", null, userName, fullName);
+          LogService.addLog("USER_INIT_FAILED", null, userName, fullName);
         })
         .compose(ar -> {
-          logService.addLog("USER_INIT_SUCCESS", null, userName, fullName);
+          LogService.addLog("USER_INIT_SUCCESS", null, userName, fullName);
 
           // init user's access
           Future<Object> f11 = userFuncService.addUserFunc(userName, "DOCS_READ", false);
@@ -52,10 +50,10 @@ public class UserService {
 
           return Future.all(f11, f12)
               .onFailure(err -> {
-                logService.addLog("DOC_ACCESS_INIT_FAILED", null, userName, fullName);
+                LogService.addLog("DOC_ACCESS_INIT_FAILED", null, userName, fullName);
               })
               .compose(ar2 -> {
-                logService.addLog("DOC_ACCESS_INIT_SUCCESS", null, userName, fullName);
+                LogService.addLog("DOC_ACCESS_INIT_SUCCESS", null, userName, fullName);
                 return Future.succeededFuture(user);
               });
         });
@@ -87,10 +85,10 @@ public class UserService {
 
     return Future.all(f1, f2, f3)
         .onFailure(err -> {
-          logService.addLog("DOC_ACCESS_SET_FAILED", null, userName, fullName);
+          LogService.addLog("DOC_ACCESS_SET_FAILED", null, userName, fullName);
         })
         .compose(data -> {
-          logService.addLog("DOC_ACCESS_SET_SUCCESS", null, userName, fullName);
+          LogService.addLog("DOC_ACCESS_SET_SUCCESS", null, userName, fullName);
           List<JsonObject> d1 = data.resultAt(0);
           List<JsonObject> d2 = data.resultAt(1);
           List<JsonObject> d3 = data.resultAt(2);
@@ -121,11 +119,11 @@ public class UserService {
 
     return adServices.adAuthorization(userName, password)
         .onFailure(err -> {
-          logService.addLog("LOGIN_FAILED", ip, userName);
+          LogService.addLog("LOGIN_FAILED", ip, userName);
         })
         .compose(useInfo -> {
           String fullName = useInfo.getString("full_name");
-          logService.addLog("LOGIN_SUCCESS", ip, userName, fullName);
+          LogService.addLog("LOGIN_SUCCESS", ip, userName, fullName);
 
           User user = User.create(useInfo);
 

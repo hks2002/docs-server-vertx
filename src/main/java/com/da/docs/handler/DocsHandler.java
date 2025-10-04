@@ -2,16 +2,16 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                            *
  * @CreatedDate           : 2025-03-10 01:05:38                                                                      *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                            *
- * @LastEditDate          : 2025-09-23 22:03:09                                                                      *
+ * @LastEditDate          : 2025-10-04 15:14:31                                                                      *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                          *
  ********************************************************************************************************************/
 
 
 package com.da.docs.handler;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -32,9 +32,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.file.FileProps;
-import io.vertx.core.file.FileSystem;
 import io.vertx.core.http.HttpHeaders;
-import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.http.MimeMapping;
@@ -73,12 +71,14 @@ public class DocsHandler implements Handler<RoutingContext> {
   private Set<String> waterMakerExcludeNames = new HashSet<>();
 
   public DocsHandler() {
+    JsonObject appConfig = VertxHolder.appConfig != null ? VertxHolder.appConfig : new JsonObject();
+
     JsonObject docsConfig = Utils.isWindows()
-        ? VertxHolder.appConfig.getJsonObject("docs").getJsonObject("windows")
-        : VertxHolder.appConfig.getJsonObject("docs").getJsonObject("linux");
+        ? appConfig.getJsonObject("docs", new JsonObject()).getJsonObject("windows")
+        : appConfig.getJsonObject("docs", new JsonObject()).getJsonObject("linux");
     this.docsRoot = docsConfig.getString("docsRoot", docsRoot);
 
-    JsonObject waterMarkConfig = VertxHolder.appConfig.getJsonObject("docs")
+    JsonObject waterMarkConfig = appConfig.getJsonObject("docs", new JsonObject())
         .getJsonObject("waterMark");
     this.waterMarkEnable = waterMarkConfig.getBoolean("enable", waterMarkEnable);
     this.showCompany = waterMarkConfig.getBoolean("showCompany", showCompany);
@@ -97,8 +97,7 @@ public class DocsHandler implements Handler<RoutingContext> {
       waterMakerExcludeNames.add(excludeName.toUpperCase());
     }
 
-    this.saveWithDocName = VertxHolder.appConfig.getJsonObject("docs")
-        .getBoolean("saveWithDocName", true);
+    this.saveWithDocName = appConfig.getJsonObject("docs").getBoolean("saveWithDocName", true);
   }
 
   @Override
@@ -124,44 +123,48 @@ public class DocsHandler implements Handler<RoutingContext> {
     sendStatic(context, path);
   }
 
-  private String getLocalFile(String requestPath, RoutingContext context) {
-    String localFilePath = docsRoot + requestPath.replace("/docs-api/docs", "");
-    log.trace("File to serve is " + localFilePath);
-    return localFilePath;
-  }
-
   private void sendStatic(RoutingContext context, String requestPath) {
-    FileSystem fs = context.vertx().fileSystem();
-    final String file = getLocalFile(requestPath, context);
+    final String localFilePath = getLocalFile(requestPath);
 
     // skip hidden files
-    int idx = file.lastIndexOf('/');
-    String name = file.substring(idx + 1);
+    int idx = localFilePath.lastIndexOf('/');
+    String name = localFilePath.substring(idx + 1);
     if (name.length() > 0 && name.charAt(0) == '.') {
+      Response.badRequest(context);
       return;
     }
 
     // verify if the file exists
-    var exists = fs.existsBlocking(file);
-    // check again
-    if (!exists) {
-      Response.notFound(context);
-      return;
-    }
+    VertxHolder.fs.exists(localFilePath)
+        .onFailure(err -> {
+          log.error("Failed to check file exists: {}, {}", localFilePath, err.getCause());
+          Response.internalError(context, "Failed to check file exists");
+        })
+        .onSuccess(exists -> {
+          if (!exists) {
+            Response.notFound(context);
+            return;
+          }
 
-    FileProps fProps = fs.propsBlocking(file);
-    if (fProps.isDirectory()) {
-      sendDirectory(context, requestPath, file);
-    } else {
-      sendFile(context, fs, file, fProps);
-    }
-
+          VertxHolder.fs.props(localFilePath)
+              .onFailure(err -> {
+                log.error("Failed to get file props: {}, {}", localFilePath, err.getCause());
+                Response.internalError(context, "Failed to get file props");
+              })
+              .onSuccess(fProps -> {
+                if (fProps.isDirectory()) {
+                  sendDirectory(context, requestPath, localFilePath);
+                } else {
+                  sendFile(context, localFilePath);
+                }
+              });
+        });
   }
 
   /**
    * sibling means that we are being upgraded from a directory to a index
    */
-  private void sendDirectory(RoutingContext context, String requestPath, String systemFile) {
+  private void sendDirectory(RoutingContext context, String requestPath, String localFilePath) {
     // in order to keep caches in a valid state we need to assert that
     // the user is requesting a directory (ends with /)
     if (!requestPath.endsWith("/")) {
@@ -172,77 +175,69 @@ public class DocsHandler implements Handler<RoutingContext> {
       return;
     }
 
-    sendDirectoryListing(context, requestPath, systemFile);
+    sendDirectoryListing(context, requestPath, localFilePath);
   }
 
-  private void sendDirectoryListing(RoutingContext context, String requestPath, String systemFile) {
+  private void sendDirectoryListing(RoutingContext context, String requestPath, String localFilePath) {
     HttpServerResponse response = context.response();
-    FileSystem fs = context.vertx().fileSystem();
 
-    fs.readDir(systemFile).onFailure(err -> {
-      context.fail(err);
-    }).onSuccess(list -> {
-      // log.info("{}, {}", requestPath, systemFile);
+    VertxHolder.fs.readDir(localFilePath)
+        .onFailure(err -> {
+          log.error("Failed to read directory: {}, {}", localFilePath, err.getCause());
+          Response.internalError(context, "Failed to read directory");
+        }).onSuccess(list -> {
+          // log.info("{}, {}", requestPath, systemFile);
 
-      String accept = CommonUtils.getAccept(context);
-      Buffer bReturn = Buffer.buffer();
+          String accept = CommonUtils.getAccept(context);
 
-      switch (accept) {
-        case "application/json":
-          JsonArray json = new JsonArray();
+          switch (accept) {
+            case "application/json":
+              JsonArray json = new JsonArray();
 
-          for (String s : list) {
-            String fileName = s.substring(s.lastIndexOf(File.separatorChar) + 1);
-            // skip dot files
-            if (!includeHidden && fileName.charAt(0) == '.') {
-              continue;
-            }
-            FileProps fProps = fs.propsBlocking(s);
-            if (fProps == null) {
-              continue;
-            }
-            JsonObject o = new JsonObject();
-            o.put("name", fileName);
-            o.put("size", fProps.size());
-            o.put("lastModified", fProps.lastModifiedTime());
-            o.put("url", requestPath + fileName + (fProps.isDirectory() ? "/" : ""));
-            o.put("isDirectory", fProps.isDirectory());
-            json.add(o);
+              for (String s : list) {
+                String fileName = s.substring(s.lastIndexOf(File.separatorChar) + 1);
+                // skip dot files
+                if (!includeHidden && fileName.charAt(0) == '.') {
+                  continue;
+                }
+                FileProps fProps = VertxHolder.fs.propsBlocking(s);
+                if (fProps == null) {
+                  continue;
+                }
+                JsonObject o = new JsonObject();
+                o.put("name", fileName);
+                o.put("size", fProps.size());
+                o.put("lastModified", fProps.lastModifiedTime());
+                o.put("url", requestPath + fileName + (fProps.isDirectory() ? "/" : ""));
+                o.put("isDirectory", fProps.isDirectory());
+                json.add(o);
+              }
+
+              response.putHeader(HttpHeaders.CONTENT_TYPE, "application/json;charset=UTF-8").end(json.encode());
+              break;
+            default:
+              Buffer b = Buffer.buffer();
+
+              for (String s : list) {
+                String fileName = s.substring(s.lastIndexOf(File.separatorChar) + 1);
+                // skip dot files
+                if (!includeHidden && fileName.charAt(0) == '.') {
+                  continue;
+                }
+                b.appendString(fileName);
+                b.appendInt('\n');
+              }
+              response.putHeader(HttpHeaders.CONTENT_TYPE, "text/plain;charset=UTF-8").end(b);
           }
-
-          bReturn.appendBytes(json.encode().getBytes(StandardCharsets.UTF_8));
-          response.putHeader(HttpHeaders.CONTENT_TYPE, "application/json;charset=UTF-8").end(json.encode());
-          break;
-        default:
-          Buffer b = Buffer.buffer();
-
-          for (String s : list) {
-            String fileName = s.substring(s.lastIndexOf(File.separatorChar) + 1);
-            // skip dot files
-            if (!includeHidden && fileName.charAt(0) == '.') {
-              continue;
-            }
-            b.appendString(fileName);
-            b.appendInt('\n');
-          }
-          response.putHeader(HttpHeaders.CONTENT_TYPE, "text/plain;charset=UTF-8").end(b);
-      }
-    });
+        });
   }
 
-  private void sendFile(RoutingContext context, FileSystem fs, String file, FileProps fileProps) {
+  private void sendFile(RoutingContext context, String localFilePath) {
     HttpServerRequest request = context.request();
     HttpServerResponse response = context.response();
-    Session session = context.session();
-    LogService logService = new LogService();
 
-    if (request.method() == HttpMethod.HEAD) {
-      response.end();
-    }
-    writeCacheHeaders(request, fileProps);
-
-    String fileName = getFileName(file);
     String ip = CommonUtils.getTrueRemoteIp(request);
+    String fileName = getFileName(localFilePath);
 
     // here user should not be null, it has been checked before
     User user = Optional.ofNullable(context.user()).orElse(User.create(new JsonObject()));
@@ -250,11 +245,12 @@ public class DocsHandler implements Handler<RoutingContext> {
     String fullName = user.principal().getString("full_name", "");
 
     // bp info
+    Session session = context.session();
     final String bpCode = Optional.ofNullable((String) session.get("BP_CODE")).orElse("");
     final String bpName = Optional.ofNullable((String) session.get("BP_NAME")).orElse("");
 
     // log it
-    logService.addLog("DOC_ACCESS_SUCCESS", ip, loginName, fullName, fileName, bpCode, bpName);
+    LogService.addLog("DOC_ACCESS_SUCCESS", ip, loginName, fullName, fileName, bpCode, bpName);
 
     final String wmText = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) +
         (showCompany ? ' ' + companyName : "") +
@@ -262,15 +258,15 @@ public class DocsHandler implements Handler<RoutingContext> {
         (showBP ? ' ' + bpName : "");
 
     // guess content type
-    String extension = getFileExtension(file);
-    String contentType = Optional.ofNullable(MimeMapping.mimeTypeForExtension(extension))
-        .orElse("application/octet-stream");
+    String extension = getFileExtension(localFilePath);
     final String outFileName = encodeFileName(
         wmText +
             (saveWithDocName
                 ? ' ' + fileName
                 : ' ' + CommonUtils.addRadomChar(getFileNameWithoutExtension(fileName)) + " DO NOT SAVE ME"))
-        + "." + extension.toUpperCase();
+        + "." + extension;
+
+    writeDateHeader(response);
 
     // add water mark for some file types
     if (waterMarkEnable &&
@@ -278,59 +274,85 @@ public class DocsHandler implements Handler<RoutingContext> {
         waterMakerFileTypes.contains(extension) &&
         !CommonUtils.nameMatch(fileName, waterMakerExcludeNames)) {
 
-      // add watermark
-      fs.readFile(file).onSuccess(buffer -> {
-        ByteArrayInputStream bis = new ByteArrayInputStream(buffer.getBytes());
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+      VertxHolder.fs.createTempFile(null, null)
+          .onSuccess(tempFile -> {
+            try {
+              FileInputStream fis = new FileInputStream(localFilePath);
+              FileOutputStream fos = new FileOutputStream(tempFile);
 
-        boolean b = ITextTools.addWatermark(extension, bis, bos, wmText, 30, bpCode.isEmpty() ? 0.3f : 0.03f);
-        if (b) {
-          log.info("Add watermark to file: {}", file);
-          writeDispositionHeaders(response, MimeMapping.mimeTypeForExtension("pdf"),
-              outFileName + (extension.equals("pdf") ? "" : ".PDF"));
-          Buffer responseBuffer = Buffer.buffer(bos.toByteArray());
-          response.end(responseBuffer);
-        } else {
-          log.error("Failed to add watermark to file: {}", file);
-          writeDispositionHeaders(response, MimeMapping.mimeTypeForExtension(extension), outFileName);
-          Buffer responseBuffer = Buffer.buffer(buffer.getBytes());
-          response.end(responseBuffer);
-        }
-      });
+              try (fis; fos) {// auto close
+                boolean b = ITextTools.addWatermark(extension, fis, fos, wmText, 30, bpCode.isEmpty() ? 0.3f : 0.03f);
+                if (b) {// add watermark success
+                  log.info("Add watermark to file: {}", localFilePath);
+                  writeDispositionHeaders(response, "pdf", outFileName + (extension.equals("pdf") ? "" : ".pdf"));
+
+                  response.sendFile(tempFile)
+                      .onComplete(ar -> {
+                        VertxHolder.fs.delete(tempFile);
+                      });
+                } else { // failed, send original file
+                  log.error("Failed to add watermark to file: {}", localFilePath);
+                  writeDispositionHeaders(response, extension, outFileName);
+
+                  response.sendFile(localFilePath)
+                      .onComplete(ar -> {
+                        VertxHolder.fs.delete(tempFile);
+                      });
+                }
+
+              }
+            } catch (Exception e) {
+              log.error("Failed to add watermark: {}", e.getCause());
+              response.setStatusCode(500).end("Error adding watermark");
+            }
+          });
 
     } else { // send original file
-      writeDispositionHeaders(response, contentType, outFileName);
-
-      fs.readFile(file).onSuccess(buffer -> {
-        Buffer responseBuffer = Buffer.buffer(buffer.getBytes());
-        response.end(responseBuffer);
-      });
-
+      writeDispositionHeaders(response, extension, outFileName);
+      response.sendFile(localFilePath);
     }
-
   }
 
   /**
-   * Create all required header so content can be cache by Caching servers or
-   * Browsers
-   *
-   * @param request base HttpServerRequest
-   * @param props   file properties
+   * Write the date header.
+   * 
+   * @param request
    */
-  private void writeCacheHeaders(HttpServerRequest request, FileProps props) {
-
-    MultiMap headers = request.response().headers();
+  private void writeDateHeader(HttpServerResponse response) {
+    MultiMap headers = response.headers();
     // date header is mandatory
     headers.set("date", io.vertx.ext.web.impl.Utils.formatRFC1123DateTime(System.currentTimeMillis()));
   }
 
-  private void writeDispositionHeaders(HttpServerResponse response, String contentType, String outFileName) {
+  /**
+   * Write the content type and content disposition headers.
+   * 
+   * @param response
+   * @param extension
+   * @param outFileName
+   */
+  private void writeDispositionHeaders(HttpServerResponse response, String extension, String outFileName) {
+    String contentType = Optional.ofNullable(MimeMapping.mimeTypeForExtension(extension))
+        .orElse("application/octet-stream");
+
     if (contentType.startsWith("text")) {
       response.putHeader(HttpHeaders.CONTENT_TYPE, contentType + ";charset=" + defaultContentEncoding);
     } else {
       response.putHeader(HttpHeaders.CONTENT_TYPE, contentType);
     }
     response.putHeader(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + outFileName + "\"");
+  }
+
+  /**
+   * Get the local file path from the request path.
+   * 
+   * @param requestPath
+   * @return
+   */
+  private String getLocalFile(String requestPath) {
+    String localFilePath = docsRoot + requestPath.replace("/docs-api/docs", "");
+    log.trace("File to serve is " + localFilePath);
+    return localFilePath;
   }
 
   /**
@@ -349,6 +371,12 @@ public class DocsHandler implements Handler<RoutingContext> {
     }
   }
 
+  /**
+   * Get the file name without extension.
+   * 
+   * @param file
+   * @return
+   */
   private String getFileNameWithoutExtension(String file) {
     if (file == null)
       return null;
@@ -358,23 +386,35 @@ public class DocsHandler implements Handler<RoutingContext> {
     return file.substring(0, dotIndex);
   }
 
-  private String getFileName(String file) {
-    int lastSeparatorIndex = file.lastIndexOf('/');
+  /**
+   * Get the file name from the path.
+   * 
+   * @param filePath
+   * @return
+   */
+  private String getFileName(String filePath) {
+    int lastSeparatorIndex = filePath.lastIndexOf('/');
     if (lastSeparatorIndex == -1) {
-      lastSeparatorIndex = file.lastIndexOf('\\');
+      lastSeparatorIndex = filePath.lastIndexOf('\\');
     }
 
-    if (lastSeparatorIndex != -1 && lastSeparatorIndex < file.length() - 1) {
-      return file.substring(lastSeparatorIndex + 1);
+    if (lastSeparatorIndex != -1 && lastSeparatorIndex < filePath.length() - 1) {
+      return filePath.substring(lastSeparatorIndex + 1);
     } else {
-      return file;
+      return filePath;
     }
   }
 
+  /**
+   * Encode the file name to be used in the Content-Disposition header.
+   * 
+   * @param fileName
+   * @return
+   */
   private static String encodeFileName(String fileName) {
     try {
       String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8.toString());
-      return encodedFileName.replace("+", "%20");
+      return encodedFileName.replace("+", " ");
     } catch (Exception e) {
       return fileName;
     }

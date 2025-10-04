@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-10 01:05:38                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-09-22 18:54:42                                                                       *
+ * @LastEditDate          : 2025-10-04 15:21:12                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
@@ -60,7 +60,6 @@ public class UploadHandler implements Handler<RoutingContext> {
       Response.badRequest(context, "Bad Request, referer is null");
       return;
     }
-    LogService logService = new LogService();
 
     String ip = CommonUtils.getTrueRemoteIp(request);
     String loginName = user.principal().getString("login_name", "");
@@ -87,12 +86,12 @@ public class UploadHandler implements Handler<RoutingContext> {
             "MOVE")
         .onSuccess(rst -> {
           log.info("Upload file {} success", upload.fileName());
-          logService.addLog("DOC_UPLOAD_SUCCESS", ip, loginName, fullName, upload.fileName());
+          LogService.addLog("DOC_UPLOAD_SUCCESS", ip, loginName, fullName, upload.fileName());
           Response.success(context, "Upload file success");
         })
         .onFailure(ar -> {
           log.error("{}", ar.getMessage());
-          logService.addLog("DOC_UPLOAD_FAILED", ip, loginName, fullName,
+          LogService.addLog("DOC_UPLOAD_FAILED", ip, loginName, fullName,
               upload.fileName());
           Response.internalError(context, "Upload file failed");
         });
