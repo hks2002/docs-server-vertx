@@ -25,10 +25,9 @@ public class TestDMS {
   @Test
   void test2(Vertx vertx, VertxTestContext testContext) throws Throwable {
     log.info("Test DMSServices");
-    DMSServices dmsServices = new DMSServices();
-    dmsServices.setDmsServer("http://192.168.0.247:4040");
+    DMSServices.setDmsServer("http://192.168.0.247:4040");
 
-    dmsServices.getDocuments("956A1001G01").onSuccess(result -> {
+    DMSServices.getDocuments("956A1001G01").onSuccess(result -> {
       log.info("getDocuments: {}", result);
     }).onFailure(e -> {
       log.error("Error: ", e);

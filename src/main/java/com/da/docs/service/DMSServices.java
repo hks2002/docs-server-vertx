@@ -40,7 +40,7 @@ public class DMSServices {
   private static String dmsServer = VertxHolder.appConfig == null ? new String()
       : VertxHolder.appConfig.getString("dmsServer");
 
-  public void setDmsServer(String server) {
+  public static void setDmsServer(String server) {
     DMSServices.dmsServer = server;
   }
 

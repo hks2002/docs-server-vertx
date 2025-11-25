@@ -24,8 +24,7 @@ public class TestHttpService {
 
   @Test
   public void test1(Vertx vertx, VertxTestContext testContext) throws Throwable {
-    HttpService httpService = new HttpService();
-    httpService.get(
+    HttpService.get(
         "http://192.168.10.64:4040/cocoon/View/LoginCAD/fr/AW_AutoLogin.html?userName=TEMP&dsn=dmsDS&Client_Type=25&computerName=AWS&LDAPControl=true")
         .onComplete(ar -> {
           if (ar.succeeded()) {
@@ -34,7 +33,7 @@ public class TestHttpService {
             log.error("Error: ", ar.cause());
           }
         }).andThen(r -> {
-          httpService.get(
+          HttpService.get(
               "http://192.168.10.64:4040/cocoon/View/ExecuteService/fr/AW_AuplResult3.html?ServiceName=aws.au&ServiceSubPackage=aws&UserName=TEMP&dsn=dmsDS&Client_Type=25&ServiceParameters=GET_AUTOCOMPLETION@JTI1ODU2QTEwMDE=@&AUSessionID=b19ibgcdj25d0")
               .onComplete(ar -> {
                 if (ar.succeeded()) {
