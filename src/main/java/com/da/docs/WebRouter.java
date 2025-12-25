@@ -1,10 +1,11 @@
-/*********************************************************************************************************************
- * @Author                : Robert Huang<56649783@qq.com>                                                            *
- * @CreatedDate           : 2025-03-28 00:21:32                                                                      *
- * @LastEditors           : Robert Huang<56649783@qq.com>                                                            *
- * @LastEditDate          : 2025-09-23 22:00:02                                                                      *
- * @CopyRight             : Dedienne Aerospace China ZhuHai                                                          *
- ********************************************************************************************************************/
+/**********************************************************************************************************************
+ * @Author                : Robert Huang<56649783@qq.com>                                                             *
+ * @CreatedDate           : 2025-03-28 00:21:32                                                                       *
+ * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
+ * @LastEditDate          : 2025-12-23 09:46:55                                                                       *
+ * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
+ *********************************************************************************************************************/
+
 
 package com.da.docs;
 
@@ -23,7 +24,6 @@ import com.da.docs.annotation.PostMapping;
 import com.da.docs.utils.PackageUtils;
 
 import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
@@ -169,8 +169,8 @@ public class WebRouter extends RouterImpl {
 
   }
 
-  public WebRouter(Vertx vertx) {
-    super(vertx);
+  public WebRouter() {
+    super(VertxHolder.vertx);
     registerGlobalHandler();
     registerAllPathHandler();
     registerPathHandler();

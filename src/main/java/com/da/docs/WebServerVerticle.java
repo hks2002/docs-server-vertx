@@ -1,10 +1,11 @@
-/*********************************************************************************************************************
- * @Author                : Robert Huang<56649783@qq.com>                                                            *
- * @CreatedDate           : 2025-03-08 19:11:51                                                                      *
- * @LastEditors           : Robert Huang<56649783@qq.com>                                                            *
- * @LastEditDate          : 2025-09-18 18:51:36                                                                      *
- * @CopyRight             : Dedienne Aerospace China ZhuHai                                                          *
- ********************************************************************************************************************/
+/**********************************************************************************************************************
+ * @Author                : Robert Huang<56649783@qq.com>                                                             *
+ * @CreatedDate           : 2025-03-08 19:11:51                                                                       *
+ * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
+ * @LastEditDate          : 2025-12-23 09:55:36                                                                       *
+ * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
+ *********************************************************************************************************************/
+
 
 package com.da.docs;
 
@@ -23,10 +24,10 @@ public class WebServerVerticle extends VerticleBase {
     JsonObject httpConfig = config().getJsonObject("http");
 
     // init DB
-    DB.initDB(vertx);
+    DB.initDB();
 
     return vertx.createHttpServer(new HttpServerOptions(httpConfig))
-        .requestHandler(new WebRouter(vertx))
+        .requestHandler(new WebRouter())
         .listen().onSuccess(http -> {
           log.info("HTTP server started on port {}", http.actualPort());
         });
