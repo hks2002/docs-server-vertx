@@ -175,5 +175,6 @@ nbdist/
 
 ### this project configuration ###
 config-prod.json
+config-dev.json
 config-test.json
 
