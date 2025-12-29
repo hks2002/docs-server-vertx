@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-16 11:51:49                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-09-19 00:08:52                                                                       *
+ * @LastEditDate          : 2025-12-25 16:43:12                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
@@ -46,7 +46,8 @@ public class LoginHandler implements Handler<RoutingContext> {
       userService.login(credentials, ip)
           .onFailure(err -> {
             Response.unauthorized(context, err.getMessage());
-          }).onSuccess(user -> {
+          })
+          .onSuccess(user -> {
             ((UserContextImpl) context.userContext()).setUser(user);
             Response.success(context, user.principal());
           });

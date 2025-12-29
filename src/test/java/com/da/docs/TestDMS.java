@@ -1,10 +1,11 @@
-/*********************************************************************************************************************
- * @Author                : Robert Huang<56649783@qq.com>                                                            *
- * @CreatedDate           : 2025-03-21 19:32:00                                                                      *
- * @LastEditors           : Robert Huang<56649783@qq.com>                                                            *
- * @LastEditDate          : 2025-10-03 16:53:27                                                                      *
- * @CopyRight             : Dedienne Aerospace China ZhuHai                                                          *
- ********************************************************************************************************************/
+/**********************************************************************************************************************
+ * @Author                : Robert Huang<56649783@qq.com>                                                             *
+ * @CreatedDate           : 2025-03-21 19:32:00                                                                       *
+ * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
+ * @LastEditDate          : 2025-12-25 16:34:24                                                                       *
+ * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
+ *********************************************************************************************************************/
+
 
 package com.da.docs;
 
@@ -24,16 +25,19 @@ public class TestDMS {
 
   @Test
   void test2(Vertx vertx, VertxTestContext testContext) throws Throwable {
+    VertxHolder.init(vertx);
     log.info("Test DMSServices");
-    DMSServices.setDmsServer("http://192.168.0.247:4040");
 
-    DMSServices.getDocuments("956A1001G01").onSuccess(result -> {
-      log.info("getDocuments: {}", result);
-    }).onFailure(e -> {
-      log.error("Error: ", e);
-    }).andThen(r -> {
-      testContext.completeNow();
-    });
+    DMSServices.getDocuments("956A1001G01")
+        .onSuccess(result -> {
+          log.info("getDocuments: {}", result.encodePrettily());
+        })
+        .onFailure(e -> {
+          log.error("Error: ", e);
+        })
+        .andThen(r -> {
+          testContext.completeNow();
+        });
 
   }
 

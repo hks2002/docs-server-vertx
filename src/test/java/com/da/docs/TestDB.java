@@ -1,10 +1,11 @@
-/*********************************************************************************************************************
- * @Author                : Robert Huang<56649783@qq.com>                                                            *
- * @CreatedDate           : 2025-03-21 19:32:00                                                                      *
- * @LastEditors           : Robert Huang<56649783@qq.com>                                                            *
- * @LastEditDate          : 2025-07-02 11:57:20                                                                      *
- * @CopyRight             : Dedienne Aerospace China ZhuHai                                                          *
- ********************************************************************************************************************/
+/**********************************************************************************************************************
+ * @Author                : Robert Huang<56649783@qq.com>                                                             *
+ * @CreatedDate           : 2025-03-21 19:32:00                                                                       *
+ * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
+ * @LastEditDate          : 2025-12-25 16:37:55                                                                       *
+ * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
+ *********************************************************************************************************************/
+
 
 package com.da.docs;
 
@@ -31,10 +32,13 @@ public class TestDB {
 
   @Test
   public void testDB(Vertx vertx, VertxTestContext testContext) throws Throwable {
+    VertxHolder.init(vertx);
+    JsonObject mysqlConfig = VertxHolder.appConfig.getJsonObject("mysql");
+
     HikariConfig config = new HikariConfig();
-    config.setJdbcUrl("jdbc:mysql://127.0.0.1:3306/docs");
-    config.setUsername("docs");
-    config.setPassword("password");
+    config.setJdbcUrl(mysqlConfig.getString("jdbcUrl"));
+    config.setUsername(mysqlConfig.getString("user"));
+    config.setPassword(mysqlConfig.getString("password"));
     config.setMinimumIdle(2);
 
     HikariDataSource ds = new HikariDataSource(config);

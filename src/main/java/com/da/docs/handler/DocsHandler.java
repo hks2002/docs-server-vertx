@@ -1,10 +1,10 @@
-/*********************************************************************************************************************
- * @Author                : Robert Huang<56649783@qq.com>                                                            *
- * @CreatedDate           : 2025-03-10 01:05:38                                                                      *
- * @LastEditors           : Robert Huang<56649783@qq.com>                                                            *
- * @LastEditDate          : 2025-10-04 15:14:31                                                                      *
- * @CopyRight             : Dedienne Aerospace China ZhuHai                                                          *
- ********************************************************************************************************************/
+/**********************************************************************************************************************
+ * @Author                : Robert Huang<56649783@qq.com>                                                             *
+ * @CreatedDate           : 2025-03-10 01:05:38                                                                       *
+ * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
+ * @LastEditDate          : 2025-12-29 15:35:52                                                                       *
+ * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
+ *********************************************************************************************************************/
 
 
 package com.da.docs.handler;
@@ -59,7 +59,7 @@ public class DocsHandler implements Handler<RoutingContext> {
   private boolean includeHidden = true;
   private String defaultContentEncoding = Charset.defaultCharset().name();
 
-  private String docsRoot = Utils.isWindows() ? "c:/docs" : "/mnt/docs";
+  private String docsRoot = "";
   private boolean waterMarkEnable = false;
   private boolean showCompany = false;
   private boolean showBP = false;
@@ -71,15 +71,14 @@ public class DocsHandler implements Handler<RoutingContext> {
   private Set<String> waterMakerExcludeNames = new HashSet<>();
 
   public DocsHandler() {
-    JsonObject appConfig = VertxHolder.appConfig != null ? VertxHolder.appConfig : new JsonObject();
+    JsonObject appConfig = VertxHolder.appConfig;
+    JsonObject docsConfig = appConfig.getJsonObject("docs");
+    JsonObject waterMarkConfig = docsConfig.getJsonObject("waterMark");
 
-    JsonObject docsConfig = Utils.isWindows()
-        ? appConfig.getJsonObject("docs", new JsonObject()).getJsonObject("windows")
-        : appConfig.getJsonObject("docs", new JsonObject()).getJsonObject("linux");
-    this.docsRoot = docsConfig.getString("docsRoot", docsRoot);
+    this.docsRoot = Utils.isWindows()
+        ? docsConfig.getJsonObject("docsRoot").getString("windows")
+        : docsConfig.getJsonObject("docsRoot").getString("linux");
 
-    JsonObject waterMarkConfig = appConfig.getJsonObject("docs", new JsonObject())
-        .getJsonObject("waterMark");
     this.waterMarkEnable = waterMarkConfig.getBoolean("enable", waterMarkEnable);
     this.showCompany = waterMarkConfig.getBoolean("showCompany", showCompany);
     this.showBP = waterMarkConfig.getBoolean("showBP", showBP);
@@ -174,11 +173,6 @@ public class DocsHandler implements Handler<RoutingContext> {
           .end();
       return;
     }
-
-    sendDirectoryListing(context, requestPath, localFilePath);
-  }
-
-  private void sendDirectoryListing(RoutingContext context, String requestPath, String localFilePath) {
     HttpServerResponse response = context.response();
 
     VertxHolder.fs.readDir(localFilePath)
@@ -186,7 +180,7 @@ public class DocsHandler implements Handler<RoutingContext> {
           log.error("Failed to read directory: {}, {}", localFilePath, err.getCause());
           Response.internalError(context, "Failed to read directory");
         }).onSuccess(list -> {
-          // log.info("{}, {}", requestPath, systemFile);
+          // log.info("{}, {}", requestPath, list);
 
           String accept = CommonUtils.getAccept(context);
 
@@ -315,7 +309,7 @@ public class DocsHandler implements Handler<RoutingContext> {
 
   /**
    * Write the date header.
-   * 
+   *
    * @param request
    */
   private void writeDateHeader(HttpServerResponse response) {
@@ -326,7 +320,7 @@ public class DocsHandler implements Handler<RoutingContext> {
 
   /**
    * Write the content type and content disposition headers.
-   * 
+   *
    * @param response
    * @param extension
    * @param outFileName
@@ -345,7 +339,7 @@ public class DocsHandler implements Handler<RoutingContext> {
 
   /**
    * Get the local file path from the request path.
-   * 
+   *
    * @param requestPath
    * @return
    */
@@ -373,7 +367,7 @@ public class DocsHandler implements Handler<RoutingContext> {
 
   /**
    * Get the file name without extension.
-   * 
+   *
    * @param file
    * @return
    */
@@ -388,7 +382,7 @@ public class DocsHandler implements Handler<RoutingContext> {
 
   /**
    * Get the file name from the path.
-   * 
+   *
    * @param filePath
    * @return
    */
@@ -407,7 +401,7 @@ public class DocsHandler implements Handler<RoutingContext> {
 
   /**
    * Encode the file name to be used in the Content-Disposition header.
-   * 
+   *
    * @param fileName
    * @return
    */

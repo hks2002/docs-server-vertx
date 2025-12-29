@@ -2,9 +2,10 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-20 11:15:15                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-10-03 17:52:44                                                                       *
+ * @LastEditDate          : 2025-12-25 06:01:52                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
+
 
 package com.da.docs.db;
 
@@ -18,12 +19,11 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.da.docs.VertxHolder;
 import com.da.docs.utils.ResultSetUtils;
 import com.zaxxer.hikari.HikariDataSource;
 
 import io.vertx.core.Future;
-import io.vertx.core.Vertx;
-import io.vertx.core.file.FileSystem;
 import io.vertx.core.json.JsonObject;
 import lombok.extern.log4j.Log4j2;
 
@@ -36,11 +36,10 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 public class DB {
   private static HikariDataSource[] pools = new HikariDataSource[2];
-  private static FileSystem fs;
 
-  public static void initDB(Vertx vertx) {
-    JsonObject mysqlConfig = vertx.getOrCreateContext().config().getJsonObject("mysql");
-    JsonObject mssqlConfig = vertx.getOrCreateContext().config().getJsonObject("mssql");
+  public static void initDB() {
+    JsonObject mysqlConfig = VertxHolder.appConfig.getJsonObject("mysql");
+    JsonObject mssqlConfig = VertxHolder.appConfig.getJsonObject("mssql");
 
     JsonObject mysqlPoolOptions = mysqlConfig.getJsonObject("poolOptions", new JsonObject());
     JsonObject mssqlPoolOptions = mssqlConfig.getJsonObject("poolOptions", new JsonObject());
@@ -83,7 +82,6 @@ public class DB {
 
     DB.pools[0] = mysqlDS;
     DB.pools[1] = mssqlDS;
-    DB.fs = vertx.fileSystem();
   }
 
   public static void closeAll() {
@@ -139,19 +137,20 @@ public class DB {
 
     return validate(sqlTemplate, json).compose(valid -> {
       Connection conn = null;
+      String sql = null;
       try {
         conn = pools[dbIdx].getConnection();
-        String sql = replacePlaceholder(sqlTemplate, json);
+        sql = replacePlaceholder(sqlTemplate, json);
         Statement stmt = conn.createStatement();
         var rs = stmt.executeQuery(sql);
         List<JsonObject> list = ResultSetUtils.toList(rs);
 
-        log.trace("{}\n\n{}\n", sqlTemplate, list.toString());
+        log.trace("{}\n\n{}\n", sql, list.toString());
         conn.close();
         return Future.succeededFuture(list);
 
       } catch (Exception e) {
-        log.error("{}\n\n{}\n\n{}\n", e.getCause(), sqlTemplate, json.encodePrettily());
+        log.error("{}\n\n{}\n\n{}\n", e.getMessage(), sql, json.encodePrettily());
         if (conn != null) {
           try {
             conn.close();
@@ -170,7 +169,7 @@ public class DB {
   }
 
   public static Future<List<JsonObject>> queryByFile(String sqlFileName, JsonObject json, int dbIdx) {
-    return fs.readFile("sqlTemplate/" + sqlFileName + ".sql")
+    return VertxHolder.fs.readFile("sqlTemplate/" + sqlFileName + ".sql")
         .onFailure(ar -> {
           log.error("{}", ar.getCause());
         })
@@ -186,25 +185,24 @@ public class DB {
   public static Future<Object> insertBySql(String sqlTemplate, JsonObject json, int dbIdx) {
     json.put("create_at", LocalDateTime.now());
     json.put("create_by", 0);
-    json.put("update_at", LocalDateTime.now());
-    json.put("update_by", 0);
 
     return validate(sqlTemplate, json).compose(valid -> {
       Connection conn = null;
+      String sql = null;
       try {
         conn = pools[dbIdx].getConnection();
-        String sql = replacePlaceholder(sqlTemplate, json);
+        sql = replacePlaceholder(sqlTemplate, json);
         Statement stmt = conn.createStatement();
         int rs = stmt.executeUpdate(sql);
         conn.close();
 
-        log.trace("{}\n\n{}\n", sqlTemplate, rs);
+        log.trace("{}\n\n{}\n", sql, rs);
         if (rs == 0) {
           return Future.failedFuture("Insert failed, no rows affected");
         }
         return Future.succeededFuture(rs);
       } catch (Exception e) {
-        log.error("{}\n{}\n{}\n", e.getCause(), sqlTemplate, json.encodePrettily());
+        log.error("{}\n{}\n{}\n", e.getMessage(), sql, json.encodePrettily());
         if (conn != null) {
           try {
             conn.close();
@@ -223,7 +221,7 @@ public class DB {
   }
 
   public static Future<Object> insertByFile(String sqlFileName, JsonObject json, int dbIdx) {
-    return fs.readFile("sqlTemplate/" + sqlFileName + ".sql")
+    return VertxHolder.fs.readFile("sqlTemplate/" + sqlFileName + ".sql")
         .onFailure(ar -> {
           log.error("{}", ar.getCause());
         })
@@ -242,17 +240,18 @@ public class DB {
 
     return validate(sqlTemplate, json).compose(valid -> {
       Connection conn = null;
+      String sql = null;
       try {
         conn = pools[dbIdx].getConnection();
-        String sql = replacePlaceholder(sqlTemplate, json);
+        sql = replacePlaceholder(sqlTemplate, json);
         Statement stmt = conn.createStatement();
         int rs = stmt.executeUpdate(sql);
         conn.close();
 
-        log.trace("{}\n\n{}\n", sqlTemplate, rs);
+        log.trace("{}\n\n{}\n", sql, rs);
         return Future.succeededFuture(rs);
       } catch (Exception e) {
-        log.error("{}\n{}\n{}\n", e.getCause(), sqlTemplate, json.encodePrettily());
+        log.error("{}\n{}\n{}\n", e.getMessage(), sql, json.encodePrettily());
         if (conn != null) {
           try {
             conn.close();
@@ -271,7 +270,7 @@ public class DB {
   }
 
   public static Future<Object> updateByFile(String sqlFileName, JsonObject json, int dbIdx) {
-    return fs.readFile("sqlTemplate/" + sqlFileName + ".sql")
+    return VertxHolder.fs.readFile("sqlTemplate/" + sqlFileName + ".sql")
         .onFailure(ar -> {
           log.error("{}", ar.getCause());
         })
@@ -287,20 +286,21 @@ public class DB {
   public static Future<Object> deleteBySql(String sqlTemplate, JsonObject json, int dbIdx) {
     return validate(sqlTemplate, json).compose(valid -> {
       Connection conn = null;
+      String sql = null;
       try {
         conn = pools[dbIdx].getConnection();
-        String sql = replacePlaceholder(sqlTemplate, json);
+        sql = replacePlaceholder(sqlTemplate, json);
         Statement stmt = conn.createStatement();
         int rs = stmt.executeUpdate(sql);
         conn.close();
 
-        log.trace("{}\n\n{}\n", sqlTemplate, rs);
+        log.trace("{}\n\n{}\n", sql, rs);
         if (rs == 0) {
           return Future.failedFuture("Delete failed, no rows affected");
         }
         return Future.succeededFuture(rs);
       } catch (Exception e) {
-        log.error("{}\n{}\n{}\n", e.getCause(), sqlTemplate, json.encodePrettily());
+        log.error("{}\n{}\n{}\n", e.getMessage(), sql, json.encodePrettily());
         if (conn != null) {
           try {
             conn.close();
@@ -319,7 +319,7 @@ public class DB {
   }
 
   public static Future<Object> deleteByFile(String sqlFileName, JsonObject json, int dbIdx) {
-    return fs.readFile("sqlTemplate/" + sqlFileName + ".sql")
+    return VertxHolder.fs.readFile("sqlTemplate/" + sqlFileName + ".sql")
         .onFailure(ar -> {
           log.error("{}", ar.getCause());
         })
