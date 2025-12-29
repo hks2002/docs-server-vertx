@@ -27,8 +27,7 @@
   "java.debug.settings.vmArgs": "-Dlog4j.skipJansi=false",
   // for unit test
   "java.test.config": {
-    "vmArgs": [
-      "-Dlog4j.skipJansi=false"
-    ]
-  }
+    "vmArgs": ["-Dlog4j.skipJansi=false"]
+  },
+  "java.compile.nullAnalysis.mode": "disabled"
 }

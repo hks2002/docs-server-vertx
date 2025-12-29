@@ -3,11 +3,19 @@
   "configurations": [
     {
       "type": "java",
-      "name": "VertxApp",
+      "name": "VertxApp-Dev",
       "request": "launch",
       "mainClass": "com.da.docs.VertxApp",
       "args": [
-        "--conf=src/main/resources/config-prod.json",
+        "--options=src/main/resources/vertx-options.json"
+      ]
+    },
+    {
+      "type": "java",
+      "name": "VertxApp-Prod",
+      "request": "launch",
+      "mainClass": "com.da.docs.VertxApp",
+      "args": [
         "--options=src/main/resources/vertx-options.json"
       ]
     }
