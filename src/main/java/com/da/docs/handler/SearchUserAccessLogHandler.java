@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-10 01:05:38                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-09-25 13:40:05                                                                       *
+ * @LastEditDate          : 2025-12-27 01:33:51                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
@@ -44,7 +44,7 @@ public class SearchUserAccessLogHandler implements Handler<RoutingContext> {
         .onSuccess(list -> {
           JsonArray json = new JsonArray();
           for (JsonObject o : list) {
-            o.put("location", "docs-api/docs/" + o.getString("location"));
+            o.put("location", "/docs-api/docs/" + o.getString("location"));
             json.add(o);
           }
           context.response().putHeader(HttpHeaders.CONTENT_TYPE, "application/json;charset=UTF-8").end(json.encode());
