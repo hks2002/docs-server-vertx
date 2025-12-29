@@ -9,11 +9,9 @@
     "sessionTimeout": 3600000
   },
   "docs": {
-    "windows": {
-      "docsRoot": "c:/docs"
-    },
-    "linux": {
-      "docsRoot": "/mnt/docs"
+    "docsRoot":{
+      "windows": "Y:/Drawing",
+      "linux":"/mnt/docs"
     },
     "waterMark": {
       "enable": true,
@@ -38,14 +36,22 @@
         "MANUAL"
       ]
     },
-    "saveWithDocName": false
+    "saveWithDocName": false,
+    "expiryDays": 30
   },
   "upload": {
     "bodyLimit": -1,
     "folderDeep": 2,
     "folderLen": 3
   },
+  "defaultAccess": {
+    "read": true,
+    "write": true,
+    "admin": false
+  },
+  "adminPassword": "docs",
   "dmsServer": "http://127.0.0.1:4040",
+  "dmsServerFast": "http://127.0.0.1:4040",
   "adServer": {
     "url": "ldap://127.0.0.1:389",
     "domain": "docs.com",

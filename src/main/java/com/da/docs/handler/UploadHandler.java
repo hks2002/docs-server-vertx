@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-10 01:05:38                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-10-17 15:16:35                                                                       *
+ * @LastEditDate          : 2025-12-25 18:44:49                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Optional;
 
 import com.da.docs.annotation.PostMapping;
+import com.da.docs.service.DocsService;
 import com.da.docs.service.LogService;
 import com.da.docs.utils.CommonUtils;
 import com.da.docs.utils.FSUtils;
@@ -74,27 +75,31 @@ public class UploadHandler implements Handler<RoutingContext> {
     FileUpload upload = uploads.get(0);
     log.trace("{} {} {} {}", upload.uploadedFileName(), upload.fileName(), upload.contentType(), upload.size());
     String fromPath = upload.uploadedFileName().replace('\\', '/');
+    String fileName = upload.fileName();
 
     String lastModified = context.request().getHeader("Last-Modified");
     FSUtils.updateFileModifiedDate(fromPath, lastModified);
 
-    FSUtils
-        .setFileInfo(
-            fromPath,
-            upload.fileName(),
-            "0",
-            "MOVE")
+    DocsService.moveFile(fromPath, fileName, "UPDATE")
+        .onFailure(ar -> {
+          log.error("{}", ar.getMessage());
+          LogService.addLog("DOC_UPLOAD_FAILED", ip, loginName, fullName, fileName);
+          Response.internalError(context, "Upload file failed");
+        })
+        .compose(v -> {
+          return DocsService.addFileInfo(fileName, null);
+        })
         .onSuccess(rst -> {
-          log.info("Upload file {} success", upload.fileName());
-          LogService.addLog("DOC_UPLOAD_SUCCESS", ip, loginName, fullName, upload.fileName());
+          log.info("Upload file {} success", fileName);
+          LogService.addLog("DOC_UPLOAD_SUCCESS", ip, loginName, fullName, fileName);
           Response.success(context, "Upload file success");
         })
         .onFailure(ar -> {
           log.error("{}", ar.getMessage());
-          LogService.addLog("DOC_UPLOAD_FAILED", ip, loginName, fullName,
-              upload.fileName());
+          LogService.addLog("DOC_UPLOAD_FAILED", ip, loginName, fullName, fileName);
           Response.internalError(context, "Upload file failed");
         });
+
   }
 
 }

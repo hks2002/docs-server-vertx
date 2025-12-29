@@ -1,10 +1,11 @@
-/*********************************************************************************************************************
- * @Author                : Robert Huang<56649783@qq.com>                                                            *
- * @CreatedDate           : 2025-05-11 00:19:27                                                                      *
- * @LastEditors           : Robert Huang<56649783@qq.com>                                                            *
- * @LastEditDate          : 2025-10-17 16:58:22                                                                      *
- * @CopyRight             : Dedienne Aerospace China ZhuHai                                                          *
- ********************************************************************************************************************/
+/**********************************************************************************************************************
+ * @Author                : Robert Huang<56649783@qq.com>                                                             *
+ * @CreatedDate           : 2025-05-11 00:19:27                                                                       *
+ * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
+ * @LastEditDate          : 2025-12-27 01:18:04                                                                       *
+ * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
+ *********************************************************************************************************************/
+
 
 package com.da.docs.service;
 
@@ -37,44 +38,35 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 public class DMSServices {
 
-  private static String dmsServer = VertxHolder.appConfig == null ? new String()
-      : VertxHolder.appConfig.getString("dmsServer");
-
-  public static void setDmsServer(String server) {
-    DMSServices.dmsServer = server;
-  }
-
   private static CacheLoader<String, String> cacheLoader = new CacheLoader<String, String>() {
     @Override
-    public String load(String key) {
+    public String load(String dmsServer) {
       try {
-        return doLogin().toCompletionStage().toCompletableFuture().get();
+        return doLogin(dmsServer).toCompletionStage().toCompletableFuture().get();
       } catch (Exception e) {
         log.error("DMS Login error: {}", e.getCause());
         return "";
       }
     }
   };
-  private static RemovalListener<String, String> removalListener = (key, sessionId, cause) -> {
-    log.debug(
-        "[Dms] SessionId cache {} is removed, cause is {}",
-        sessionId,
-        cause);
-    doLogout(sessionId);
+  private static RemovalListener<String, String> removalListener = (dmsServer, sessionId, cause) -> {
+    log.debug("[Dms] SessionId cache {} is removed, cause is {}", sessionId, cause);
+    doLogout(dmsServer, sessionId);
   };
 
   private static LoadingCache<String, String> dmsSessionCache = Caffeine
       .newBuilder()
-      .expireAfterAccess(15, TimeUnit.MINUTES)
+      .expireAfterAccess(10, TimeUnit.MINUTES)
       .removalListener(removalListener)
       .build(cacheLoader);
 
   /**
    * Login to DMS system, get session ID
-   * 
+   *
+   * @param dmsServer DMS server
    * @return
    */
-  public static Future<String> doLogin() {
+  public static Future<String> doLogin(String dmsServer) {
     String url = dmsServer
         + "/cocoon/View/LoginCAD/fr/AW_AutoLogin.html?userName=TEMP&dsn=dmsDS&Client_Type=25&computerName=AWS&LDAPControl=true";
 
@@ -90,24 +82,27 @@ public class DMSServices {
 
           log.debug("id: {}", id);
           return Future.succeededFuture(id);
-        }).onFailure(e -> {
+        })
+        .onFailure(e -> {
           log.error("Login failed: {}", e.getCause());
         });
   }
 
   /**
    * Logout from DMS system, remove session ID from cache
-   * 
-   * @param sessionId
+   *
+   * @param dmsServer DMS server
+   * @param sessionId Current session ID
    */
-  private static void doLogout(String sessionId) {
+  private static void doLogout(String dmsServer, String sessionId) {
     String url = dmsServer
         + "/cocoon/View/LogoutXML/fr/AW_Logout7.html?userName=TEMP&dsn=dmsDS&Client_Type=25&AUSessionID="
         + sessionId;
 
-    HttpService.get(url).onSuccess(res -> {
-      log.debug("Logout success: {}", sessionId);
-    })
+    HttpService.get(url)
+        .onSuccess(res -> {
+          log.debug("Logout success: {}", sessionId);
+        })
         .onFailure(e -> {
           log.error("Logout failed: {}", e.getCause());
         });
@@ -116,7 +111,7 @@ public class DMSServices {
   /**
    * Extract
    * <LI>values from XML content
-   * 
+   *
    * @param xmlContent
    * @return
    */
@@ -135,7 +130,7 @@ public class DMSServices {
 
   /**
    * Extract file ID from HTML content
-   * 
+   *
    * @param htmlContent
    * @return
    */
@@ -152,7 +147,7 @@ public class DMSServices {
 
   /**
    * Extract modified date from HTML content
-   * 
+   *
    * @param htmlContent
    * @return
    */
@@ -181,10 +176,13 @@ public class DMSServices {
   /**
    * Get document names from DMS system
    *
-   * @param Pn Project number or similar identifier, used to filter documents
+   * @param dmsServer DMS server
+   * @param sessionId Current session ID
+   * @param Pn        Project number or similar identifier, used to filter
+   *                  documents
    * @return Returns a list of document names
    */
-  private static Future<List<String>> getDocumentNames(String sessionId, String Pn) {
+  private static Future<List<String>> getDocumentNames(String dmsServer, String sessionId, String Pn) {
     String search = base64Encode("%" + Pn);
 
     String url = String.format(
@@ -207,19 +205,21 @@ public class DMSServices {
           }
           log.debug("Document names: {}", result);
           return Future.succeededFuture(result);
-        }).otherwise(e -> {
+        }).recover(e -> {
           log.error("Get document names failed: {}", e.getCause());
-          return new ArrayList<String>();
+          return Future.failedFuture(e.getMessage());
         });
   }
 
   /**
    * Get file information from DMS system
    *
-   * @param FileName Name of the file to search for
+   * @param dmsServer DMS server
+   * @param sessionId Current session ID
+   * @param FileName  Name of the file to search for
    * @return Returns the HTML content containing file information
    */
-  private static Future<String> getFileInfo(String sessionId, String FileName) {
+  private static Future<String> getFileInfo(String dmsServer, String sessionId, String FileName) {
     String search = base64Encode(FileName);
 
     String url = String.format(
@@ -231,9 +231,51 @@ public class DMSServices {
     return HttpService.get(url)
         .compose(html -> {
           return Future.succeededFuture(html);
-        }).otherwise(e -> {
+        })
+        .recover(e -> {
           log.error("Get file info failed: {}", e.getCause());
-          return "";
+          return Future.failedFuture(e.getMessage());
+        });
+  }
+
+  /**
+   * Get document buffer from DMS system, using fast server first, if fails, try
+   * normal server
+   *
+   * @param fileId   The ID of the file to be downloaded
+   * @param fileName The name of the file to be downloaded
+   * @return
+   */
+  private static Future<Buffer> getDocumentBuffer(String fileId, String fileName) {
+    String dmsServer = VertxHolder.appConfig.getString("dmsServer");
+    String dmsServerFast = VertxHolder.appConfig.getString("dmsServerFast");
+
+    // 581 bugs, means login required, remove session, it works again
+    String url = dmsServer + "/cocoon/viewDocument/ANY?FileID=" +
+        fileId + "&UserName=TEMP&dsn=dmsDS&Client_Type=25";
+    String urlFast = dmsServerFast + "/cocoon/viewDocument/ANY?FileID=" +
+        fileId + "&UserName=TEMP&dsn=dmsDS&Client_Type=25";
+
+    return HttpService.getFile(urlFast)
+        .compose(bytes -> {
+          if (bytes.length() == 0 || bytes.length() == 581) {
+            dmsSessionCache.invalidate(dmsServerFast);
+            log.error("[Dms][DOWNLOAD] {} from Dms server, size {}", fileName, bytes.length());
+            return Future.failedFuture("Invalid file size");
+          }
+          return Future.succeededFuture(bytes);
+        })
+        .recover(ar -> {
+          // retry once
+          return HttpService.getFile(url)
+              .compose(bytes -> {
+                if (bytes.length() == 0 || bytes.length() == 581) {
+                  dmsSessionCache.invalidate(dmsServer);
+                  log.error("[Dms][DOWNLOAD] {} from Dms server, size {}", fileName, bytes.length());
+                  return Future.failedFuture("Invalid file size");
+                }
+                return Future.succeededFuture(bytes);
+              });
         });
   }
 
@@ -244,15 +286,18 @@ public class DMSServices {
    * @return Returns a Future with a list of document information objects
    */
   public static Future<JsonArray> getDocuments(String Pn) {
-    String sessionId = dmsSessionCache.getIfPresent("dmsSession");
+    String dmsServer = VertxHolder.appConfig.getString("dmsServer");
+    String dmsServerFast = VertxHolder.appConfig.getString("dmsServerFast");
+    String sessionId = dmsSessionCache.getIfPresent(dmsServer);
+    dmsSessionCache.getIfPresent(dmsServerFast); // make the fast server session cached too, so that fast download works
 
-    return getDocumentNames(sessionId, Pn)
+    return getDocumentNames(dmsServer, sessionId, Pn)
         .compose(documentNames -> {
           JsonArray docs = new JsonArray();
           List<Future<JsonObject>> docFutures = new ArrayList<>();
 
           for (String documentName : documentNames) {
-            Future<JsonObject> docFuture = getFileInfo(sessionId, documentName)
+            Future<JsonObject> docFuture = getFileInfo(dmsServer, sessionId, documentName)
                 .compose(html -> {
                   String fileId = extractFileId(html);
                   String dateString = extractModifiedDate(html);
@@ -271,6 +316,8 @@ public class DMSServices {
                     doc.put("file_name", documentName);
                     doc.put("doc_modified_at", modifiedAtEpoch);
                     doc.put("file_id", fileId);
+
+                    // Download the document and save to database
                     downloadDmsDocs(documentName, fileId, modifiedAtEpoch);
 
                     return Future.succeededFuture(doc);
@@ -304,71 +351,41 @@ public class DMSServices {
   }
 
   /**
-   * Get document buffer from DMS system
-   * 
-   * @param fileId
-   * @return
-   */
-  private static Future<Buffer> getDocumentBuffer(String fileId) {
-    // 581 bugs, remove session, it works again
-    String url = dmsServer + "/cocoon/viewDocument/ANY?FileID=" +
-        fileId + "&UserName=TEMP&dsn=dmsDS&Client_Type=25";
-
-    return HttpService.getFile(url)
-        .compose(bytes -> {
-          return Future.succeededFuture(bytes);
-        })
-        .otherwise(e -> {
-          log.error("Get document bytes failed: {}", e.getCause());
-          return Buffer.buffer();
-        });
-  }
-
-  /**
    * Download documents from DMS system
    *
-   * @param docs List of documents to download
+   * @param fileName   the file name
+   * @param fileId     the file ID in DMS system
+   * @param modifiedAt the modified date
+   * @return Future with temp file path
    */
-  public static void downloadDmsDocs(String fileName, String fileId, Long modifiedAt) {
-    if (FSUtils.isFileExists(fileName)) {
+  public static Future<Void> downloadDmsDocs(String fileName, String fileId, Long modifiedAt) {
+    // get the destination folder
+    String toSubFolder = FSUtils.getFolderPathByFileName(fileName);
+    String toFolderFullPath = FSUtils.getDocsRoot() + '/' + toSubFolder;
+    String toFileFullPath = toFolderFullPath + '/' + fileName;
+
+    if (FSUtils.isFileExists(toFileFullPath)) {
       log.debug("[Dms][DOWNLOAD] {} exists, skip download", fileName);
-      return;
+      return Future.succeededFuture();
     }
     log.info("[Dms][DOWNLOAD] start download {} from Dms server", fileName);
 
-    getDocumentBuffer(fileId)
-        .onSuccess(buffer -> {
-          if (buffer.length() == 0 || buffer.length() == 581) {
-            log.error("[Dms][DOWNLOAD] {} from Dms server, size {}", fileName, buffer.length());
-            return;
-          }
+    return Future.all(VertxHolder.fs.createTempFile(null, null), getDocumentBuffer(fileId, fileName))
+        .compose(ar -> {
+          String tempFile = ar.resultAt(0);
+          Buffer buffer = ar.resultAt(1);
           log.info("[Dms][DOWNLOAD] {} from Dms server, size {}", fileName, buffer.length());
 
-          VertxHolder.fs.createTempFile(null, null)
-              .onSuccess(tempFile -> {
-                VertxHolder.fs.writeFile(tempFile, buffer)
-                    .onSuccess(v -> {
-                      FSUtils.updateFileModifiedDate(tempFile, modifiedAt);
-                      FSUtils.setFileInfo(
-                          tempFile,
-                          fileName,
-                          fileId,
-                          "MOVE")
-                          .onSuccess(res -> {
-                            log.info("[Dms][DOWNLOAD] Successfully downloaded and processed file: {}", fileName);
-                          })
-                          .onFailure(e -> {
-                            log.error("[Dms][DOWNLOAD] Error processing file {}: {}", fileName, e.getCause());
-                          });
-                    })
-                    .onFailure(e -> {
-                      log.error("[Dms][DOWNLOAD] Error writing to temp file for {}: {}", fileName, e.getCause());
-                    });
+          return VertxHolder.fs.writeFile(tempFile, buffer)
+              .compose(v -> {
+                FSUtils.updateFileModifiedDate(tempFile, modifiedAt);
+                return Future.succeededFuture();
+              }).compose(v -> {
+                return DocsService.moveFile(tempFile, fileName, "MOVE");
+              }).andThen(v3 -> {
+                DocsService.addFileInfo(fileName, fileId);
               });
-
-        })
-        .onFailure(e -> {
-          log.error("[Dms][DOWNLOAD] Error downloading file {}: {}", fileName, e.getCause());
         });
   }
+
 }

@@ -117,7 +117,7 @@ public class CommonUtils {
   /**
    * Inserts a character between each character of the given string.
    * for example: insertBetween("abc", '-') return "a-b-c"
-   * 
+   *
    * @param str
    * @param insertChar
    * @return
@@ -132,77 +132,6 @@ public class CommonUtils {
         sb.append(randomChar("_-. "));
       }
     }
-    return sb.toString();
-  }
-
-  /**
-   * Generates a file path based on the given file name, sub-folder depth, and
-   * sub-folder length.
-   *
-   * @param fileName        the file name
-   * @param toSubFolderDeep the depth of sub-folders to create, if -1, no
-   *                        sub-folder
-   * @param toSubFolderLen  the length of each sub-folder
-   *
-   * @Note Top level is always ne character[0-9A-Z]
-   *       and remove "TDS", "OMSD", "GIM" ... from file name
-   * @return the generated file path
-   */
-  public static String getPathByFileName(
-      String fileName,
-      int toSubFolderDeep,
-      int toSubFolderLen) {
-    if (toSubFolderDeep <= 0) {
-      return "";
-    }
-
-    int dotIndex = fileName.lastIndexOf(".");
-    String fileNameNoExt = dotIndex > 0
-        ? fileName.substring(0, dotIndex)
-        : fileName;
-
-    // remove "TDS", "OMSD", "GIM" ... from file name, ignore case
-    // keep only [A-Za-z0-9] in file name
-    String cleanName = fileNameNoExt
-        .replaceAll("(?i)TDS", "")
-        .replaceAll("(?i)OMSD", "")
-        .replaceAll("(?i)DWG", "")
-        .replaceAll("(?i)REV", "")
-        .replaceAll("(?i)GIM", "")
-        .replaceAll("(?i)NOTICE", "")
-        .replaceAll("(?i)TECHNIQUE", "")
-        .replaceAll("(?i)D'UTILISATIONS", "")
-        .replaceAll("(?i)D'UTILISATION", "")
-        .replaceAll("(?i)D'INSTRUCTIONS", "")
-        .replaceAll("(?i)D'INSTRUCTION", "")
-        .replaceAll("(?i)INSTRUCTIONS", "")
-        .replaceAll("(?i)INSTRUCTION", "")
-        .replaceAll("(?i)INFORMATION", "")
-        .replaceAll("(?i)USER", "")
-        .replaceAll("(?i)GUIDE", "")
-        .replaceAll("(?i)MANUAL", "")
-        .replaceAll("(?i)MANUEL", "")
-        .replaceAll("[^A-Za-z0-9]", "")
-        .toUpperCase();
-
-    // get left toSubFolderDeep * toSubFolderLen chars, if less than it, add 0
-    String subFolders = withRightPad(cleanName, toSubFolderDeep * toSubFolderLen, '0');
-    // top level fixed to 0-9 and A-Z
-    StringBuilder sb = new StringBuilder(subFolders.substring(0, 1));
-    for (int i = 0; i < toSubFolderDeep; i++) {
-      String subFolderName = subFolders.substring(
-          i * toSubFolderLen,
-          (i + 1) * toSubFolderLen);
-      // These names are reserved for Windows
-      if (subFolderName.equals("CON") ||
-          subFolderName.equals("PRN") ||
-          subFolderName.equals("AUX") ||
-          subFolderName.equals("NUL")) {
-        subFolderName = "000";
-      }
-      sb.append('/').append(subFolderName);
-    }
-
     return sb.toString();
   }
 
