@@ -5,9 +5,7 @@ INSERT INTO
     last_name,
     email,
     create_at,
-    create_by,
-    update_at,
-    update_by
+    create_by
   )
 VALUES
   (
@@ -16,7 +14,5 @@ VALUES
     '#{last_name}',
     '#{email}',
     '#{create_at}',
-    '#{create_by}',
-    '#{update_at}',
-    '#{update_by}'
+    '#{create_by}'
   )

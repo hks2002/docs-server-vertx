@@ -1,10 +1,10 @@
-/*********************************************************************************************************************
- * @Author                : Robert Huang<56649783@qq.com>                                                            *
- * @CreatedDate           : 2025-03-21 15:17:16                                                                      *
- * @LastEditors           : Robert Huang<56649783@qq.com>                                                            *
- * @LastEditDate          : 2025-10-04 15:18:03                                                                      *
- * @CopyRight             : Dedienne Aerospace China ZhuHai                                                          *
- ********************************************************************************************************************/
+/**********************************************************************************************************************
+ * @Author                : Robert Huang<56649783@qq.com>                                                             *
+ * @CreatedDate           : 2025-03-21 15:17:16                                                                       *
+ * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
+ * @LastEditDate          : 2025-12-25 18:24:13                                                                       *
+ * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
+ *********************************************************************************************************************/
 
 
 package com.da.docs.service;
@@ -13,6 +13,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.da.docs.VertxHolder;
 import com.da.docs.db.DB;
 
 import io.vertx.core.Future;
@@ -32,28 +33,28 @@ public class UserService {
     return DB.insertByFile("insertUser", obj);
   }
 
-  public Future<User> addUser(User user) {
+  public Future<User> addUser(User user, String ip) {
     JsonObject userInfo = user.principal();
     String userName = userInfo.getString("login_name");
     String fullName = userInfo.getString("full_name");
 
     return addUser(userInfo)
         .onFailure(err -> {
-          LogService.addLog("USER_INIT_FAILED", null, userName, fullName);
+          LogService.addLog("USER_INIT_FAILED", ip, userName, fullName);
         })
         .compose(ar -> {
-          LogService.addLog("USER_INIT_SUCCESS", null, userName, fullName);
-
+          LogService.addLog("USER_INIT_SUCCESS", ip, userName, fullName);
+          JsonObject defaultAccess = VertxHolder.appConfig.getJsonObject("defaultAccess");
           // init user's access
-          Future<Object> f11 = userFuncService.addUserFunc(userName, "DOCS_READ", false);
-          Future<Object> f12 = userFuncService.addUserFunc(userName, "DOCS_WRITE", false);
+          Future<Object> f11 = userFuncService.addUserFunc(userName, "DOCS_READ", defaultAccess.getBoolean("read"));
+          Future<Object> f12 = userFuncService.addUserFunc(userName, "DOCS_WRITE", defaultAccess.getBoolean("write"));
 
           return Future.all(f11, f12)
               .onFailure(err -> {
-                LogService.addLog("DOC_ACCESS_INIT_FAILED", null, userName, fullName);
+                LogService.addLog("DOC_ACCESS_INIT_FAILED", ip, userName, fullName);
               })
               .compose(ar2 -> {
-                LogService.addLog("DOC_ACCESS_INIT_SUCCESS", null, userName, fullName);
+                LogService.addLog("DOC_ACCESS_INIT_SUCCESS", ip, userName, fullName);
                 return Future.succeededFuture(user);
               });
         });
@@ -67,7 +68,7 @@ public class UserService {
     return DB.queryByFile("queryUser", null);
   }
 
-  public Future<User> searchUser(User user) {
+  public Future<User> setUserPermission(User user, String ip) {
     JsonObject userInfo = user.principal();
     String userName = userInfo.getString("login_name");
     String fullName = userInfo.getString("full_name");
@@ -85,10 +86,10 @@ public class UserService {
 
     return Future.all(f1, f2, f3)
         .onFailure(err -> {
-          LogService.addLog("DOC_ACCESS_SET_FAILED", null, userName, fullName);
+          LogService.addLog("DOC_ACCESS_SET_FAILED", ip, userName, fullName);
         })
         .compose(data -> {
-          LogService.addLog("DOC_ACCESS_SET_SUCCESS", null, userName, fullName);
+          LogService.addLog("DOC_ACCESS_SET_SUCCESS", ip, userName, fullName);
           List<JsonObject> d1 = data.resultAt(0);
           List<JsonObject> d2 = data.resultAt(1);
           List<JsonObject> d3 = data.resultAt(2);
@@ -113,32 +114,60 @@ public class UserService {
     return DB.queryByFile("queryUserByLoginName", obj);
   }
 
+  /**
+   * login and return the user with permission
+   */
   public Future<User> login(UsernamePasswordCredentials credentials, String ip) {
     String userName = credentials.getUsername();
     String password = credentials.getPassword();
 
-    return adServices.adAuthorization(userName, password)
-        .onFailure(err -> {
-          LogService.addLog("LOGIN_FAILED", ip, userName);
-        })
-        .compose(useInfo -> {
-          String fullName = useInfo.getString("full_name");
-          LogService.addLog("LOGIN_SUCCESS", ip, userName, fullName);
+    if (userName.equals("admin") && password.equals(VertxHolder.appConfig.getString("adminPassword"))) {
+      // for build in admin
+      LogService.addLog("LOGIN_SUCCESS", ip, userName, "Administrator");
 
-          User user = User.create(useInfo);
+      return searchUserByLoginName(JsonObject.of("login_name", "admin"))
+          .compose(userSearched -> {
+            if (userSearched.size() == 0) {
+              return Future.failedFuture("user admin not exists in database");
+            } else if (userSearched.size() == 1) {
+              JsonObject userInfo = userSearched.get(0);
+              // add the missing 'full_name'
+              userInfo.put("full_name", userInfo.getString("first_name") + " " + userInfo.getString("last_name"));
+              return setUserPermission(User.create(userInfo), ip);
+            } else {
+              // should never happened, login name is unique by database
+              return Future.failedFuture("User name is not unique");
+            }
+          });
+    } else {
+      // for ldap users:
+      return adServices.adAuthorization(userName, password)
+          .onFailure(err -> {
+            LogService.addLog("LOGIN_FAILED", ip, userName);
+          })
+          .compose(useInfo -> {
+            String fullName = useInfo.getString("full_name");
+            LogService.addLog("LOGIN_SUCCESS", ip, userName, fullName);
 
-          return searchUserByLoginName(useInfo)
-              .compose(userSearched -> {
-                if (userSearched.size() == 0) {
-                  return addUser(user);
-                } else if (userSearched.size() == 1) {
-                  return searchUser(user);
-                } else {
-                  // should never happened, login name is unique by database
-                  return Future.failedFuture("User name is not unique");
-                }
-              });
-        });
+            User user = User.create(useInfo);
+
+            return searchUserByLoginName(useInfo)
+                .compose(userSearched -> {
+                  if (userSearched.size() == 0) {
+                    return addUser(user, ip)
+                        .compose(u -> {
+                          return setUserPermission(user, ip);
+                        });
+                  } else if (userSearched.size() == 1) {
+                    return setUserPermission(user, ip);
+                  } else {
+                    // should never happened, login name is unique by database
+                    return Future.failedFuture("User name is not unique");
+                  }
+                });
+          });
+    }
+
   }
 
 }

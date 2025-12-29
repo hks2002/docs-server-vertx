@@ -8,9 +8,7 @@ INSERT INTO
     doc_modified_at,
     md5,
     create_at,
-    create_by,
-    update_at,
-    update_by
+    create_by
   )
 VALUES
   (
@@ -22,7 +20,5 @@ VALUES
     '#{doc_modified_at}',
     '#{md5}',
     '#{create_at}',
-    '#{create_by}',
-    '#{update_at}',
-    '#{update_by}'
+    '#{create_by}'
   );
