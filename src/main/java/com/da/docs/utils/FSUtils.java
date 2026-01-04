@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-09 23:29:08                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-12-24 21:07:32                                                                       *
+ * @LastEditDate          : 2026-01-04 19:18:10                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
@@ -16,26 +16,43 @@ import java.time.Instant;
 
 import org.bouncycastle.util.encoders.Hex;
 
-import com.da.docs.VertxHolder;
+import com.da.docs.VertxApp;
 
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.file.FileSystem;
 import io.vertx.core.impl.Utils;
 import io.vertx.core.json.JsonObject;
 import lombok.extern.log4j.Log4j2;
 
 @Log4j2
 public class FSUtils {
-  private static JsonObject docsConfig = Utils.isWindows()
-      ? VertxHolder.appConfig.getJsonObject("docs", new JsonObject()).getJsonObject("windows", new JsonObject())
-      : VertxHolder.appConfig.getJsonObject("docs", new JsonObject()).getJsonObject("linux", new JsonObject());
-  private static String docsRoot = docsConfig.getString("docsRoot", Utils.isWindows() ? "c:/docs" : "/mnt/docs");
+  private static String docsRoot = null;
+  private static Integer folderDeep = 0;
+  private static Integer folderLen = 3;
+  private static FileSystem fs = null;
 
-  private static JsonObject uploadConfig = VertxHolder.appConfig.getJsonObject("upload", new JsonObject());
-  private static int folderDeep = uploadConfig.getInteger("folderDeep", 0);
-  private static int folderLen = uploadConfig.getInteger("folderLen", 3);
+  public FSUtils() {
+    JsonObject docsConfig = Utils.isWindows()
+        ? VertxApp.appConfig.getJsonObject("docs").getJsonObject("windows")
+        : VertxApp.appConfig.getJsonObject("docs").getJsonObject("linux");
+    docsRoot = docsConfig.getString("docsRoot", Utils.isWindows() ? "c:/docs" : "/mnt/docs");
+
+    JsonObject uploadConfig = VertxApp.appConfig.getJsonObject("upload", new JsonObject());
+    folderDeep = uploadConfig.getInteger("folderDeep", 0);
+    folderLen = uploadConfig.getInteger("folderLen", 3);
+
+    fs = VertxApp.fs;
+  }
+
+  public static void setup(String docRoot, int folderDeep, int folderLen, FileSystem fileSystem) {
+    FSUtils.docsRoot = docRoot;
+    FSUtils.folderDeep = folderDeep;
+    FSUtils.folderLen = folderLen;
+    FSUtils.fs = fileSystem;
+  }
 
   public static String getDocsRoot() {
-    if (!VertxHolder.fs.existsBlocking(docsRoot) || !VertxHolder.fs.propsBlocking(docsRoot).isDirectory()) {
+    if (!fs.existsBlocking(docsRoot) || !fs.propsBlocking(docsRoot).isDirectory()) {
       log.error("[Folders] Destination path is not a directory: {}", docsRoot);
       throw new RuntimeException("Destination path is not a directory: " + docsRoot);
     }
@@ -54,7 +71,7 @@ public class FSUtils {
    * Compute MD5 checksum for a file
    */
   public static String computerMd5(String fileFullPath) {
-    Buffer buf = VertxHolder.fs.readFileBlocking(fileFullPath);
+    Buffer buf = fs.readFileBlocking(fileFullPath);
     try {
       MessageDigest md = MessageDigest.getInstance("MD5");
       byte[] bytes = buf.getBytes();
@@ -98,13 +115,13 @@ public class FSUtils {
    * false
    */
   public static boolean isFileExists(String toFileFullPath) {
-    boolean b = VertxHolder.fs.existsBlocking(toFileFullPath);
+    boolean b = fs.existsBlocking(toFileFullPath);
     if (!b) {
       return false;
     }
-    Buffer buf = VertxHolder.fs.readFileBlocking(toFileFullPath);
+    Buffer buf = fs.readFileBlocking(toFileFullPath);
     if (buf.length() == 581) {
-      VertxHolder.fs.deleteBlocking(toFileFullPath);
+      fs.deleteBlocking(toFileFullPath);
       return false;
     } else {
       return true;

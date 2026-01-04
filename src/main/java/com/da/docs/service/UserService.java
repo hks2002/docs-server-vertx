@@ -2,10 +2,9 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-21 15:17:16                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-12-25 18:24:13                                                                       *
+ * @LastEditDate          : 2026-01-04 19:34:13                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
-
 
 package com.da.docs.service;
 
@@ -13,7 +12,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import com.da.docs.VertxHolder;
+import com.da.docs.VertxApp;
 import com.da.docs.db.DB;
 
 import io.vertx.core.Future;
@@ -26,8 +25,19 @@ import lombok.extern.log4j.Log4j2;
 
 @Log4j2
 public class UserService {
-  private final ADServices adServices = new ADServices();
+  private JsonObject defaultAccess = null;
+  private String adminPassword = null;
   private final UserFuncService userFuncService = new UserFuncService();
+
+  public UserService() {
+    defaultAccess = VertxApp.appConfig.getJsonObject("defaultAccess");
+    adminPassword = VertxApp.appConfig.getString("adminPassword");
+  }
+
+  public void setup(JsonObject defaultAccess, String adminPassword) {
+    this.defaultAccess = defaultAccess;
+    this.adminPassword = adminPassword;
+  }
 
   public Future<Object> addUser(JsonObject obj) {
     return DB.insertByFile("insertUser", obj);
@@ -44,7 +54,6 @@ public class UserService {
         })
         .compose(ar -> {
           LogService.addLog("USER_INIT_SUCCESS", ip, userName, fullName);
-          JsonObject defaultAccess = VertxHolder.appConfig.getJsonObject("defaultAccess");
           // init user's access
           Future<Object> f11 = userFuncService.addUserFunc(userName, "DOCS_READ", defaultAccess.getBoolean("read"));
           Future<Object> f12 = userFuncService.addUserFunc(userName, "DOCS_WRITE", defaultAccess.getBoolean("write"));
@@ -121,7 +130,7 @@ public class UserService {
     String userName = credentials.getUsername();
     String password = credentials.getPassword();
 
-    if (userName.equals("admin") && password.equals(VertxHolder.appConfig.getString("adminPassword"))) {
+    if (userName.equals("admin") && password.equals(adminPassword)) {
       // for build in admin
       LogService.addLog("LOGIN_SUCCESS", ip, userName, "Administrator");
 
@@ -141,7 +150,7 @@ public class UserService {
           });
     } else {
       // for ldap users:
-      return adServices.adAuthorization(userName, password)
+      return ADServices.adAuthorization(userName, password)
           .onFailure(err -> {
             LogService.addLog("LOGIN_FAILED", ip, userName);
           })

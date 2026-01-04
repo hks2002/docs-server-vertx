@@ -2,10 +2,9 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-04-02 16:48:46                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-12-25 18:41:04                                                                       *
+ * @LastEditDate          : 2026-01-04 17:05:35                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
-
 
 package com.da.docs.service;
 
@@ -17,7 +16,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.da.docs.VertxHolder;
+import com.da.docs.VertxApp;
 import com.da.docs.db.DB;
 import com.da.docs.utils.FSUtils;
 
@@ -195,7 +194,7 @@ public class DocsService {
    * @param targetFolder the docs store directory, absolute path
    */
   public static void cleanDBNonExistsDocs(String targetFolder) {
-    if (!VertxHolder.fs.existsBlocking(targetFolder) || !VertxHolder.fs.propsBlocking(targetFolder).isDirectory()) {
+    if (!VertxApp.fs.existsBlocking(targetFolder) || !VertxApp.fs.propsBlocking(targetFolder).isDirectory()) {
       log.error("[Clean] Destination path is not a directory: {}", targetFolder);
       return;
     }
@@ -207,7 +206,7 @@ public class DocsService {
 
           for (int i = 0; i < fileList.size(); i++) {
             String file = targetFolder + '/' + fileList.get(i).getString("location");
-            if (!VertxHolder.fs.existsBlocking(file)) {
+            if (!VertxApp.fs.existsBlocking(file)) {
               log.info("[Clean] Delete non-existent file from Database: {}", file);
               docsService.removeDocs(fileList.get(i));
             }
@@ -243,7 +242,7 @@ public class DocsService {
       String toLocation = toSubFolder + '/' + fileName;
 
       DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-      FileProps inProps = VertxHolder.fs.propsBlocking(toFileFullPath);
+      FileProps inProps = VertxApp.fs.propsBlocking(toFileFullPath);
       long size = inProps.size();
       long creationTime = inProps.creationTime();
       long modifiedTime = inProps.lastModifiedTime();
@@ -275,8 +274,8 @@ public class DocsService {
    */
   public static Future<Void> moveFile(String fromFileFullPath, String toFileName, String mode) {
 
-    if (!VertxHolder.fs.existsBlocking(fromFileFullPath)
-        || VertxHolder.fs.propsBlocking(fromFileFullPath).isDirectory()) {
+    if (!VertxApp.fs.existsBlocking(fromFileFullPath)
+        || VertxApp.fs.propsBlocking(fromFileFullPath).isDirectory()) {
       log.error("[File] Source file is not a file: {}", fromFileFullPath);
       return Future.failedFuture("Source file is not a file: " + fromFileFullPath);
     }
@@ -287,9 +286,9 @@ public class DocsService {
       String toFolderFullPath = FSUtils.getDocsRoot() + '/' + toSubFolder;
 
       // make sure toFolder exists
-      if (!VertxHolder.fs.existsBlocking(toFolderFullPath)) {
+      if (!VertxApp.fs.existsBlocking(toFolderFullPath)) {
         log.trace("[File] Make dir: {}", toFolderFullPath);
-        VertxHolder.fs.mkdirsBlocking(toFolderFullPath);
+        VertxApp.fs.mkdirsBlocking(toFolderFullPath);
       }
       String toFileFullPath = toFolderFullPath + '/' + toFileName;
       boolean fileExists = FSUtils.isFileExists(toFileFullPath);
@@ -300,18 +299,18 @@ public class DocsService {
       Future<Void> f_moveOrCopy = null;
       switch (mode) {
         case "COPY":
-          f_moveOrCopy = VertxHolder.fs.copy(fromFileFullPath, toFileFullPath);
+          f_moveOrCopy = VertxApp.fs.copy(fromFileFullPath, toFileFullPath);
           break;
         case "MOVE":
-          f_moveOrCopy = VertxHolder.fs.move(fromFileFullPath, toFileFullPath);
+          f_moveOrCopy = VertxApp.fs.move(fromFileFullPath, toFileFullPath);
           break;
         case "UPDATE":
           f_moveOrCopy = fileExists
-              ? VertxHolder.fs.delete(toFileFullPath)
+              ? VertxApp.fs.delete(toFileFullPath)
                   .compose(ar -> {
-                    return VertxHolder.fs.move(fromFileFullPath, toFileFullPath);
+                    return VertxApp.fs.move(fromFileFullPath, toFileFullPath);
                   })
-              : VertxHolder.fs.move(fromFileFullPath, toFileFullPath);
+              : VertxApp.fs.move(fromFileFullPath, toFileFullPath);
           break;
         default:
           log.error("[File] Unknown mode: {}", mode);
@@ -350,17 +349,17 @@ public class DocsService {
    * @Note this method does not update database
    */
   public static Future<Void> buildFolderInfo(String fromFolder, String mode) {
-    if (!VertxHolder.fs.existsBlocking(fromFolder) || !VertxHolder.fs.propsBlocking(fromFolder).isDirectory()) {
+    if (!VertxApp.fs.existsBlocking(fromFolder) || !VertxApp.fs.propsBlocking(fromFolder).isDirectory()) {
       log.error("[Folders] Source path is not a directory: {}", fromFolder);
       return Future.failedFuture("Source path is not a directory: " + fromFolder);
     }
 
-    List<String> fileList = VertxHolder.fs.readDirBlocking(fromFolder);
+    List<String> fileList = VertxApp.fs.readDirBlocking(fromFolder);
 
     try {
       for (int i = 0; i < fileList.size(); i++) {
         String fileInFolder = fileList.get(i);
-        FileProps inProps = VertxHolder.fs.propsBlocking(fileInFolder);
+        FileProps inProps = VertxApp.fs.propsBlocking(fileInFolder);
 
         if (inProps.isDirectory()) {
           log.info("[Folders][INFO_BUILD] {}", fileInFolder);

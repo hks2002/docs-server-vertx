@@ -2,10 +2,9 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-28 00:21:32                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-12-23 09:46:55                                                                       *
+ * @LastEditDate          : 2026-01-04 17:06:21                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
-
 
 package com.da.docs;
 
@@ -111,14 +110,14 @@ public class WebRouter extends RouterImpl {
   }
 
   private void registerGlobalHandler() {
-    var uploadConfig = VertxHolder.appConfig.getJsonObject("upload");
+    var uploadConfig = VertxApp.appConfig.getJsonObject("upload");
     BodyHandler bodyHandler = BodyHandler.create();
-    bodyHandler.setUploadsDirectory(VertxHolder.fs.createTempDirectoryBlocking(""));
+    bodyHandler.setUploadsDirectory(VertxApp.fs.createTempDirectoryBlocking(""));
     bodyHandler.setDeleteUploadedFilesOnEnd(false);
     bodyHandler.setBodyLimit(uploadConfig.getInteger("bodyLimit", -1));
 
-    var sessionConfig = VertxHolder.appConfig.getJsonObject("session");
-    SessionHandlerImpl sessionHandler = new SessionHandlerImpl(LocalSessionStore.create(VertxHolder.vertx));
+    var sessionConfig = VertxApp.appConfig.getJsonObject("session");
+    SessionHandlerImpl sessionHandler = new SessionHandlerImpl(LocalSessionStore.create(VertxApp.vertx));
     sessionHandler.setSessionTimeout(sessionConfig.getLong("sessionTimeout", SessionHandler.DEFAULT_SESSION_TIMEOUT));
     sessionHandler.setCookieHttpOnlyFlag(sessionConfig.getBoolean("cookieHttpOnly", true));
     sessionHandler.setCookieSecureFlag(sessionConfig.getBoolean("cookieSecure", true));
@@ -170,7 +169,7 @@ public class WebRouter extends RouterImpl {
   }
 
   public WebRouter() {
-    super(VertxHolder.vertx);
+    super(VertxApp.vertx);
     registerGlobalHandler();
     registerAllPathHandler();
     registerPathHandler();

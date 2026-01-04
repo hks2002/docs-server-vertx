@@ -1,15 +1,14 @@
-/*********************************************************************************************************************
- * @Author                : Robert Huang<56649783@qq.com>                                                            *
- * @CreatedDate           : 2022-03-26 17:57:07                                                                      *
- * @LastEditors           : Robert Huang<56649783@qq.com>                                                            *
- * @LastEditDate          : 2025-10-04 15:58:38                                                                      *
- * @CopyRight             : Dedienne Aerospace China ZhuHai                                                          *
- ********************************************************************************************************************/
-
+/**********************************************************************************************************************
+ * @Author                : Robert Huang<56649783@qq.com>                                                             *
+ * @CreatedDate           : 2022-03-26 17:57:07                                                                       *
+ * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
+ * @LastEditDate          : 2026-01-04 17:05:51                                                                       *
+ * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
+ *********************************************************************************************************************/
 
 package com.da.docs.service;
 
-import com.da.docs.VertxHolder;
+import com.da.docs.VertxApp;
 
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
@@ -24,7 +23,7 @@ import netscape.javascript.JSObject;
 
 @Log4j2
 public class HttpService {
-  private static WebClient client = WebClient.create(VertxHolder.vertx == null ? Vertx.vertx() : VertxHolder.vertx,
+  private static WebClient client = WebClient.create(VertxApp.vertx == null ? Vertx.vertx() : VertxApp.vertx,
       new WebClientOptions().setTrustAll(true).setVerifyHost(false));
 
   public static Future<String> get(String url) {

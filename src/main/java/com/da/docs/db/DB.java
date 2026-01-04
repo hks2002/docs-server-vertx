@@ -2,10 +2,9 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-20 11:15:15                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-12-25 06:01:52                                                                       *
+ * @LastEditDate          : 2026-01-04 17:03:23                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
-
 
 package com.da.docs.db;
 
@@ -19,7 +18,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.da.docs.VertxHolder;
+import com.da.docs.VertxApp;
 import com.da.docs.utils.ResultSetUtils;
 import com.zaxxer.hikari.HikariDataSource;
 
@@ -38,8 +37,8 @@ public class DB {
   private static HikariDataSource[] pools = new HikariDataSource[2];
 
   public static void initDB() {
-    JsonObject mysqlConfig = VertxHolder.appConfig.getJsonObject("mysql");
-    JsonObject mssqlConfig = VertxHolder.appConfig.getJsonObject("mssql");
+    JsonObject mysqlConfig = VertxApp.appConfig.getJsonObject("mysql");
+    JsonObject mssqlConfig = VertxApp.appConfig.getJsonObject("mssql");
 
     JsonObject mysqlPoolOptions = mysqlConfig.getJsonObject("poolOptions", new JsonObject());
     JsonObject mssqlPoolOptions = mssqlConfig.getJsonObject("poolOptions", new JsonObject());
@@ -169,7 +168,7 @@ public class DB {
   }
 
   public static Future<List<JsonObject>> queryByFile(String sqlFileName, JsonObject json, int dbIdx) {
-    return VertxHolder.fs.readFile("sqlTemplate/" + sqlFileName + ".sql")
+    return VertxApp.fs.readFile("sqlTemplate/" + sqlFileName + ".sql")
         .onFailure(ar -> {
           log.error("{}", ar.getCause());
         })
@@ -221,7 +220,7 @@ public class DB {
   }
 
   public static Future<Object> insertByFile(String sqlFileName, JsonObject json, int dbIdx) {
-    return VertxHolder.fs.readFile("sqlTemplate/" + sqlFileName + ".sql")
+    return VertxApp.fs.readFile("sqlTemplate/" + sqlFileName + ".sql")
         .onFailure(ar -> {
           log.error("{}", ar.getCause());
         })
@@ -270,7 +269,7 @@ public class DB {
   }
 
   public static Future<Object> updateByFile(String sqlFileName, JsonObject json, int dbIdx) {
-    return VertxHolder.fs.readFile("sqlTemplate/" + sqlFileName + ".sql")
+    return VertxApp.fs.readFile("sqlTemplate/" + sqlFileName + ".sql")
         .onFailure(ar -> {
           log.error("{}", ar.getCause());
         })
@@ -319,7 +318,7 @@ public class DB {
   }
 
   public static Future<Object> deleteByFile(String sqlFileName, JsonObject json, int dbIdx) {
-    return VertxHolder.fs.readFile("sqlTemplate/" + sqlFileName + ".sql")
+    return VertxApp.fs.readFile("sqlTemplate/" + sqlFileName + ".sql")
         .onFailure(ar -> {
           log.error("{}", ar.getCause());
         })

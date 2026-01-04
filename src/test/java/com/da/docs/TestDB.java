@@ -2,10 +2,9 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-21 19:32:00                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-12-25 16:37:55                                                                       *
+ * @LastEditDate          : 2026-01-04 18:52:06                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
-
 
 package com.da.docs;
 
@@ -16,6 +15,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import com.da.docs.utils.ConfigUtils;
 import com.da.docs.utils.ResultSetUtils;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -32,8 +32,7 @@ public class TestDB {
 
   @Test
   public void testDB(Vertx vertx, VertxTestContext testContext) throws Throwable {
-    VertxHolder.init(vertx);
-    JsonObject mysqlConfig = VertxHolder.appConfig.getJsonObject("mysql");
+    JsonObject mysqlConfig = ConfigUtils.getConfig("config-dev.json").getJsonObject("mysql");
 
     HikariConfig config = new HikariConfig();
     config.setJdbcUrl(mysqlConfig.getString("jdbcUrl"));
@@ -55,6 +54,8 @@ public class TestDB {
     } catch (Exception e) {
       log.error("{}", e.getMessage());
     }
+    testContext.completeNow();
+
   }
 
 }

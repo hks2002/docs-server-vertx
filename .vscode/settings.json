@@ -27,7 +27,14 @@
   "java.debug.settings.vmArgs": "-Dlog4j.skipJansi=false",
   // for unit test
   "java.test.config": {
-    "vmArgs": ["-Dlog4j.skipJansi=false"]
+    "vmArgs": [
+      "-Dlog4j.skipJansi=false"
+    ]
   },
-  "java.compile.nullAnalysis.mode": "disabled"
+  "java.compile.nullAnalysis.mode": "disabled",
+  "auto-header-plus.style.4": {
+    "applyTo": "",
+    "commentElementWidth": 25,
+    "lineWidth": 80
+  }
 }

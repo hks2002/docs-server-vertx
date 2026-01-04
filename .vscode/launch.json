@@ -7,7 +7,9 @@
       "request": "launch",
       "mainClass": "com.da.docs.VertxApp",
       "args": [
-        "--options=src/main/resources/vertx-options.json"
+        "com.da.docs.WebServerVerticle",
+        "--options=src/main/resources/vertx-options.json",
+        "--conf=src/main/resources/config-dev.json"
       ]
     },
     {
@@ -16,7 +18,9 @@
       "request": "launch",
       "mainClass": "com.da.docs.VertxApp",
       "args": [
-        "--options=src/main/resources/vertx-options.json"
+        "com.da.docs.WebServerVerticle",
+        "--options=src/main/resources/vertx-options.json",
+        "--conf=src/main/resources/config-prod.json"
       ]
     }
   ]

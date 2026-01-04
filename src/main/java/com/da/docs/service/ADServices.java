@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-28 00:03:05                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-10-03 17:50:08                                                                       *
+ * @LastEditDate          : 2026-01-04 19:29:47                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
@@ -21,7 +21,7 @@ import javax.naming.directory.InitialDirContext;
 import javax.naming.directory.SearchControls;
 import javax.naming.directory.SearchResult;
 
-import com.da.docs.VertxHolder;
+import com.da.docs.VertxApp;
 
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
@@ -29,6 +29,30 @@ import lombok.extern.log4j.Log4j2;
 
 @Log4j2
 public class ADServices {
+  private static String adServerUrl = null;
+  private static String adServerDomain = null;
+  private static String searchBase = null;
+  private static Hashtable<String, String> env = new Hashtable<>();
+
+  public ADServices() {
+    JsonObject appConfig = VertxApp.appConfig;
+    JsonObject adConfig = appConfig.getJsonObject("adServer");
+    adServerUrl = adConfig.getString("url");
+    adServerDomain = adConfig.getString("domain");
+    searchBase = adConfig.getString("searchBase");
+
+    env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
+    env.put(Context.SECURITY_AUTHENTICATION, "simple");
+    env.put(Context.PROVIDER_URL, adServerUrl);
+  }
+
+  public static void setup(String url, String domain, String base) {
+    adServerUrl = url;
+    adServerDomain = domain;
+    searchBase = base;
+
+    env.put(Context.PROVIDER_URL, adServerUrl);
+  }
 
   /**
    * Authenticates a user against an Active Directory server and retrieves user
@@ -41,17 +65,7 @@ public class ADServices {
    *         if authentication succeeds, or a failed Future if authentication
    *         fails
    */
-  public Future<JsonObject> adAuthorization(String username, String password) {
-    JsonObject appConfig = VertxHolder.appConfig != null ? VertxHolder.appConfig : new JsonObject();
-    JsonObject adConfig = appConfig.getJsonObject("adServer", new JsonObject());
-    String adServerUrl = adConfig.getString("url");
-    String adServerDomain = adConfig.getString("domain");
-    String searchBase = adConfig.getString("searchBase");
-
-    Hashtable<String, String> env = new Hashtable<>();
-    env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
-    env.put(Context.SECURITY_AUTHENTICATION, "simple");
-    env.put(Context.PROVIDER_URL, adServerUrl);
+  public static Future<JsonObject> adAuthorization(String username, String password) {
     env.put(Context.SECURITY_PRINCIPAL, username + "@" + adServerDomain);
     env.put(Context.SECURITY_CREDENTIALS, password);
 

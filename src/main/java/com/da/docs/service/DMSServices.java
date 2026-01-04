@@ -2,10 +2,9 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-05-11 00:19:27                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-12-27 01:18:04                                                                       *
+ * @LastEditDate          : 2026-01-04 19:57:10                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
-
 
 package com.da.docs.service;
 
@@ -22,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.da.docs.VertxHolder;
+import com.da.docs.VertxApp;
 import com.da.docs.utils.FSUtils;
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -31,43 +30,37 @@ import com.github.benmanes.caffeine.cache.RemovalListener;
 
 import io.vertx.core.Future;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.file.FileSystem;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import lombok.extern.log4j.Log4j2;
 
 @Log4j2
 public class DMSServices {
+  private static String dmsServer = null;
+  private static String dmsServerFast = null;
+  private static FileSystem fs = null;
 
-  private static CacheLoader<String, String> cacheLoader = new CacheLoader<String, String>() {
-    @Override
-    public String load(String dmsServer) {
-      try {
-        return doLogin(dmsServer).toCompletionStage().toCompletableFuture().get();
-      } catch (Exception e) {
-        log.error("DMS Login error: {}", e.getCause());
-        return "";
-      }
-    }
-  };
-  private static RemovalListener<String, String> removalListener = (dmsServer, sessionId, cause) -> {
-    log.debug("[Dms] SessionId cache {} is removed, cause is {}", sessionId, cause);
-    doLogout(dmsServer, sessionId);
-  };
+  public DMSServices() {
+    dmsServer = VertxApp.appConfig.getString("dmsServer");
+    dmsServerFast = VertxApp.appConfig.getString("dmsServerFast");
+    fs = VertxApp.fs;
+  }
 
-  private static LoadingCache<String, String> dmsSessionCache = Caffeine
-      .newBuilder()
-      .expireAfterAccess(10, TimeUnit.MINUTES)
-      .removalListener(removalListener)
-      .build(cacheLoader);
+  public static void setup(String server, String serverFast, FileSystem fileSystem) {
+    dmsServer = server;
+    dmsServerFast = serverFast;
+    fs = fileSystem;
+  }
 
   /**
    * Login to DMS system, get session ID
    *
-   * @param dmsServer DMS server
+   * @param server DMS server
    * @return
    */
-  public static Future<String> doLogin(String dmsServer) {
-    String url = dmsServer
+  public static Future<String> doLogin(String server) {
+    String url = server
         + "/cocoon/View/LoginCAD/fr/AW_AutoLogin.html?userName=TEMP&dsn=dmsDS&Client_Type=25&computerName=AWS&LDAPControl=true";
 
     return HttpService.get(url)
@@ -91,11 +84,11 @@ public class DMSServices {
   /**
    * Logout from DMS system, remove session ID from cache
    *
-   * @param dmsServer DMS server
+   * @param server    DMS server
    * @param sessionId Current session ID
    */
-  private static void doLogout(String dmsServer, String sessionId) {
-    String url = dmsServer
+  private static void doLogout(String server, String sessionId) {
+    String url = server
         + "/cocoon/View/LogoutXML/fr/AW_Logout7.html?userName=TEMP&dsn=dmsDS&Client_Type=25&AUSessionID="
         + sessionId;
 
@@ -107,6 +100,32 @@ public class DMSServices {
           log.error("Logout failed: {}", e.getCause());
         });
   }
+
+  // Cache loader for DMS session
+  private static CacheLoader<String, String> cacheLoader = new CacheLoader<String, String>() {
+    @Override
+    public String load(String server) {
+      try {
+        return doLogin(server).toCompletionStage().toCompletableFuture().get();
+      } catch (Exception e) {
+        log.error("DMS Login error: {}", e.getCause());
+        return "";
+      }
+    }
+  };
+
+  // Removal listener for DMS session
+  private static RemovalListener<String, String> removalListener = (server, sessionId, cause) -> {
+    log.debug("[Dms] SessionId cache {} is removed, cause is {}", sessionId, cause);
+    doLogout(server, sessionId);
+  };
+
+  // DMS session cache
+  private static LoadingCache<String, String> dmsSessionCache = Caffeine
+      .newBuilder()
+      .expireAfterAccess(10, TimeUnit.MINUTES)
+      .removalListener(removalListener)
+      .build(cacheLoader);
 
   /**
    * Extract
@@ -152,6 +171,7 @@ public class DMSServices {
    * @return
    */
   private static String extractModifiedDate(String htmlContent) {
+    log.debug("extractModifiedDate\n{}", htmlContent);
     String date = null;
     Pattern pattern = Pattern.compile("<td data-name-attr=\"obj_modificationdate\" nowrap=\"1\">(.*?)</td>");
     Matcher matcher = pattern.matcher(htmlContent);
@@ -176,17 +196,17 @@ public class DMSServices {
   /**
    * Get document names from DMS system
    *
-   * @param dmsServer DMS server
+   * @param server    DMS server
    * @param sessionId Current session ID
    * @param Pn        Project number or similar identifier, used to filter
    *                  documents
    * @return Returns a list of document names
    */
-  private static Future<List<String>> getDocumentNames(String dmsServer, String sessionId, String Pn) {
+  private static Future<List<String>> getDocumentNames(String server, String sessionId, String Pn) {
     String search = base64Encode("%" + Pn);
 
     String url = String.format(
-        dmsServer + "/cocoon/View/ExecuteService/fr/AW_AuplResult3.html?" +
+        server + "/cocoon/View/ExecuteService/fr/AW_AuplResult3.html?" +
             "ServiceName=aws.au&ServiceSubPackage=aws&UserName=TEMP&dsn=dmsDS&Client_Type=25&ServiceParameters=GET_AUTOCOMPLETION@%s@&AUSessionID=%s",
         search,
         sessionId);
@@ -214,16 +234,16 @@ public class DMSServices {
   /**
    * Get file information from DMS system
    *
-   * @param dmsServer DMS server
+   * @param server    DMS server
    * @param sessionId Current session ID
    * @param FileName  Name of the file to search for
    * @return Returns the HTML content containing file information
    */
-  private static Future<String> getFileInfo(String dmsServer, String sessionId, String FileName) {
+  private static Future<String> getFileInfo(String server, String sessionId, String FileName) {
     String search = base64Encode(FileName);
 
     String url = String.format(
-        dmsServer + "/cocoon/View/ExecuteService/fr/AW_QuickSearchView7.post?" +
+        server + "/cocoon/View/ExecuteService/fr/AW_QuickSearchView7.post?" +
             "ServiceName=aws.au&ServiceParameters=GET_OBJECTS_LIST@SEARCH@%s@@@0@9999@0@&ServiceSubPackage=aws&URL_Encoding=UTF-8&date_format=enDateHour&AUSessionID=%s",
         search,
         sessionId);
@@ -247,14 +267,11 @@ public class DMSServices {
    * @return
    */
   private static Future<Buffer> getDocumentBuffer(String fileId, String fileName) {
-    String dmsServer = VertxHolder.appConfig.getString("dmsServer");
-    String dmsServerFast = VertxHolder.appConfig.getString("dmsServerFast");
 
     // 581 bugs, means login required, remove session, it works again
-    String url = dmsServer + "/cocoon/viewDocument/ANY?FileID=" +
-        fileId + "&UserName=TEMP&dsn=dmsDS&Client_Type=25";
-    String urlFast = dmsServerFast + "/cocoon/viewDocument/ANY?FileID=" +
-        fileId + "&UserName=TEMP&dsn=dmsDS&Client_Type=25";
+    String url = dmsServer + "/cocoon/viewDocument/ANY?FileID=" + fileId + "&UserName=TEMP&dsn=dmsDS&Client_Type=25";
+    String urlFast = dmsServerFast + "/cocoon/viewDocument/ANY?FileID=" + fileId
+        + "&UserName=TEMP&dsn=dmsDS&Client_Type=25";
 
     return HttpService.getFile(urlFast)
         .compose(bytes -> {
@@ -286,8 +303,6 @@ public class DMSServices {
    * @return Returns a Future with a list of document information objects
    */
   public static Future<JsonArray> getDocuments(String Pn) {
-    String dmsServer = VertxHolder.appConfig.getString("dmsServer");
-    String dmsServerFast = VertxHolder.appConfig.getString("dmsServerFast");
     String sessionId = dmsSessionCache.getIfPresent(dmsServer);
     dmsSessionCache.getIfPresent(dmsServerFast); // make the fast server session cached too, so that fast download works
 
@@ -306,25 +321,26 @@ public class DMSServices {
                     return Future.failedFuture("DateString is null");
                   }
 
+                  LocalDateTime modifiedAt = null;
+                  DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy hh:mm:ss a", Locale.ENGLISH);
                   try {
-                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy h:mm:ss a", Locale.ENGLISH);
-                    LocalDateTime modifiedAt = LocalDateTime.parse(dateString, formatter);
-                    long modifiedAtEpoch = modifiedAt.toInstant(ZoneOffset.UTC).toEpochMilli();
-
-                    // Create a Docs object and set its properties
-                    JsonObject doc = new JsonObject();
-                    doc.put("file_name", documentName);
-                    doc.put("doc_modified_at", modifiedAtEpoch);
-                    doc.put("file_id", fileId);
-
-                    // Download the document and save to database
-                    downloadDmsDocs(documentName, fileId, modifiedAtEpoch);
-
-                    return Future.succeededFuture(doc);
+                    modifiedAt = LocalDateTime.parse(dateString, formatter);
                   } catch (Exception e) {
-                    log.error("Error parsing date for document {}: {}", documentName, e.getCause());
+                    log.error("Error parsing date for document {}: {}", documentName, e.getMessage());
                     return Future.failedFuture("Error parsing date for document");
                   }
+                  long modifiedAtEpoch = modifiedAt.toInstant(ZoneOffset.UTC).toEpochMilli();
+
+                  // Create a Docs object and set its properties
+                  JsonObject doc = new JsonObject();
+                  doc.put("file_name", documentName);
+                  doc.put("doc_modified_at", modifiedAtEpoch);
+                  doc.put("file_id", fileId);
+
+                  // Download the document and save to database
+                  downloadDmsDocs(documentName, fileId, modifiedAtEpoch);
+
+                  return Future.succeededFuture(doc);
                 }).compose(v -> {
                   // only return successful docs
                   return Future.succeededFuture(v);
@@ -370,13 +386,13 @@ public class DMSServices {
     }
     log.info("[Dms][DOWNLOAD] start download {} from Dms server", fileName);
 
-    return Future.all(VertxHolder.fs.createTempFile(null, null), getDocumentBuffer(fileId, fileName))
+    return Future.all(fs.createTempFile(null, null), getDocumentBuffer(fileId, fileName))
         .compose(ar -> {
           String tempFile = ar.resultAt(0);
           Buffer buffer = ar.resultAt(1);
           log.info("[Dms][DOWNLOAD] {} from Dms server, size {}", fileName, buffer.length());
 
-          return VertxHolder.fs.writeFile(tempFile, buffer)
+          return fs.writeFile(tempFile, buffer)
               .compose(v -> {
                 FSUtils.updateFileModifiedDate(tempFile, modifiedAt);
                 return Future.succeededFuture();

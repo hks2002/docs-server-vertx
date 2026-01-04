@@ -2,10 +2,9 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                             *
  * @CreatedDate           : 2025-03-10 01:05:38                                                                       *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-12-29 15:35:52                                                                       *
+ * @LastEditDate          : 2026-01-04 17:04:15                                                                       *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
-
 
 package com.da.docs.handler;
 
@@ -21,7 +20,7 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
-import com.da.docs.VertxHolder;
+import com.da.docs.VertxApp;
 import com.da.docs.annotation.GetMapping;
 import com.da.docs.service.LogService;
 import com.da.docs.utils.CommonUtils;
@@ -71,7 +70,7 @@ public class DocsHandler implements Handler<RoutingContext> {
   private Set<String> waterMakerExcludeNames = new HashSet<>();
 
   public DocsHandler() {
-    JsonObject appConfig = VertxHolder.appConfig;
+    JsonObject appConfig = VertxApp.appConfig;
     JsonObject docsConfig = appConfig.getJsonObject("docs");
     JsonObject waterMarkConfig = docsConfig.getJsonObject("waterMark");
 
@@ -134,7 +133,7 @@ public class DocsHandler implements Handler<RoutingContext> {
     }
 
     // verify if the file exists
-    VertxHolder.fs.exists(localFilePath)
+    VertxApp.fs.exists(localFilePath)
         .onFailure(err -> {
           log.error("Failed to check file exists: {}, {}", localFilePath, err.getCause());
           Response.internalError(context, "Failed to check file exists");
@@ -145,7 +144,7 @@ public class DocsHandler implements Handler<RoutingContext> {
             return;
           }
 
-          VertxHolder.fs.props(localFilePath)
+          VertxApp.fs.props(localFilePath)
               .onFailure(err -> {
                 log.error("Failed to get file props: {}, {}", localFilePath, err.getCause());
                 Response.internalError(context, "Failed to get file props");
@@ -175,7 +174,7 @@ public class DocsHandler implements Handler<RoutingContext> {
     }
     HttpServerResponse response = context.response();
 
-    VertxHolder.fs.readDir(localFilePath)
+    VertxApp.fs.readDir(localFilePath)
         .onFailure(err -> {
           log.error("Failed to read directory: {}, {}", localFilePath, err.getCause());
           Response.internalError(context, "Failed to read directory");
@@ -194,7 +193,7 @@ public class DocsHandler implements Handler<RoutingContext> {
                 if (!includeHidden && fileName.charAt(0) == '.') {
                   continue;
                 }
-                FileProps fProps = VertxHolder.fs.propsBlocking(s);
+                FileProps fProps = VertxApp.fs.propsBlocking(s);
                 if (fProps == null) {
                   continue;
                 }
@@ -268,7 +267,7 @@ public class DocsHandler implements Handler<RoutingContext> {
         waterMakerFileTypes.contains(extension) &&
         !CommonUtils.nameMatch(fileName, waterMakerExcludeNames)) {
 
-      VertxHolder.fs.createTempFile(null, null)
+      VertxApp.fs.createTempFile(null, null)
           .onSuccess(tempFile -> {
             try {
               FileInputStream fis = new FileInputStream(localFilePath);
@@ -282,7 +281,7 @@ public class DocsHandler implements Handler<RoutingContext> {
 
                   response.sendFile(tempFile)
                       .onComplete(ar -> {
-                        VertxHolder.fs.delete(tempFile);
+                        VertxApp.fs.delete(tempFile);
                       });
                 } else { // failed, send original file
                   log.error("Failed to add watermark to file: {}", localFilePath);
@@ -290,7 +289,7 @@ public class DocsHandler implements Handler<RoutingContext> {
 
                   response.sendFile(localFilePath)
                       .onComplete(ar -> {
-                        VertxHolder.fs.delete(tempFile);
+                        VertxApp.fs.delete(tempFile);
                       });
                 }
 
