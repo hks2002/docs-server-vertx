@@ -193,7 +193,7 @@ public class DocsService {
    *
    * @param targetFolder the docs store directory, absolute path
    */
-  public static void cleanDBNonExistsDocs(String targetFolder) {
+  public void cleanDBNonExistsDocs(String targetFolder) {
     if (!VertxApp.fs.existsBlocking(targetFolder) || !VertxApp.fs.propsBlocking(targetFolder).isDirectory()) {
       log.error("[Clean] Destination path is not a directory: {}", targetFolder);
       return;
@@ -225,7 +225,7 @@ public class DocsService {
    *       and remove "TDS", "OMSD", "GIM" ... from file name
    * @Note The file must already exist in the file system
    */
-  public static Future<Object> addFileInfo(String fileName, String id) {
+  public Future<Object> addFileInfo(String fileName, String id) {
     try {
       // get the destination folder
       String toSubFolder = FSUtils.getFolderPathByFileName(fileName);
@@ -272,7 +272,7 @@ public class DocsService {
    *       and remove "TDS", "OMSD", "GIM" ... from file name
    * @Note this method does not update database
    */
-  public static Future<Void> moveFile(String fromFileFullPath, String toFileName, String mode) {
+  public Future<Void> moveFile(String fromFileFullPath, String toFileName, String mode) {
 
     if (!VertxApp.fs.existsBlocking(fromFileFullPath)
         || VertxApp.fs.propsBlocking(fromFileFullPath).isDirectory()) {
@@ -348,7 +348,7 @@ public class DocsService {
    *       and remove "TDS", "OMSD", "GIM" ... from file name
    * @Note this method does not update database
    */
-  public static Future<Void> buildFolderInfo(String fromFolder, String mode) {
+  public Future<Void> buildFolderInfo(String fromFolder, String mode) {
     if (!VertxApp.fs.existsBlocking(fromFolder) || !VertxApp.fs.propsBlocking(fromFolder).isDirectory()) {
       log.error("[Folders] Source path is not a directory: {}", fromFolder);
       return Future.failedFuture("Source path is not a directory: " + fromFolder);

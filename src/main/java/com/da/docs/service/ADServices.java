@@ -29,10 +29,10 @@ import lombok.extern.log4j.Log4j2;
 
 @Log4j2
 public class ADServices {
-  private static String adServerUrl = null;
-  private static String adServerDomain = null;
-  private static String searchBase = null;
-  private static Hashtable<String, String> env = new Hashtable<>();
+  private String adServerUrl = null;
+  private String adServerDomain = null;
+  private String searchBase = null;
+  private Hashtable<String, String> env = new Hashtable<>();
 
   public ADServices() {
     JsonObject appConfig = VertxApp.appConfig;
@@ -46,7 +46,7 @@ public class ADServices {
     env.put(Context.PROVIDER_URL, adServerUrl);
   }
 
-  public static void setup(String url, String domain, String base) {
+  public void setup(String url, String domain, String base) {
     adServerUrl = url;
     adServerDomain = domain;
     searchBase = base;
@@ -65,7 +65,7 @@ public class ADServices {
    *         if authentication succeeds, or a failed Future if authentication
    *         fails
    */
-  public static Future<JsonObject> adAuthorization(String username, String password) {
+  public Future<JsonObject> Authenticate(String username, String password) {
     env.put(Context.SECURITY_PRINCIPAL, username + "@" + adServerDomain);
     env.put(Context.SECURITY_CREDENTIALS, password);
 
@@ -133,6 +133,6 @@ public class ADServices {
     }
 
     // return user, it may be null
-    return user == null ? Future.failedFuture("Authentication Failed") : Future.succeededFuture(user);
+    return user == null ? Future.failedFuture("Authenticate Failed") : Future.succeededFuture(user);
   }
 }

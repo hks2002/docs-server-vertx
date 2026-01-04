@@ -150,7 +150,7 @@ public class UserService {
           });
     } else {
       // for ldap users:
-      return ADServices.adAuthorization(userName, password)
+      return new ADServices().Authenticate(userName, password)
           .onFailure(err -> {
             LogService.addLog("LOGIN_FAILED", ip, userName);
           })

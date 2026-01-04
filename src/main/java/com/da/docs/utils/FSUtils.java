@@ -26,23 +26,15 @@ import lombok.extern.log4j.Log4j2;
 
 @Log4j2
 public class FSUtils {
-  private static String docsRoot = null;
-  private static Integer folderDeep = 0;
-  private static Integer folderLen = 3;
-  private static FileSystem fs = null;
+  private static JsonObject docsConfig = VertxApp.appConfig.getJsonObject("docs");
+  private static String docsRoot = Utils.isWindows()
+      ? docsConfig.getJsonObject("docsRoot").getString("windows")
+      : docsConfig.getJsonObject("docsRoot").getString("linux");
 
-  public FSUtils() {
-    JsonObject docsConfig = Utils.isWindows()
-        ? VertxApp.appConfig.getJsonObject("docs").getJsonObject("windows")
-        : VertxApp.appConfig.getJsonObject("docs").getJsonObject("linux");
-    docsRoot = docsConfig.getString("docsRoot", Utils.isWindows() ? "c:/docs" : "/mnt/docs");
-
-    JsonObject uploadConfig = VertxApp.appConfig.getJsonObject("upload", new JsonObject());
-    folderDeep = uploadConfig.getInteger("folderDeep", 0);
-    folderLen = uploadConfig.getInteger("folderLen", 3);
-
-    fs = VertxApp.fs;
-  }
+  private static JsonObject uploadConfig = VertxApp.appConfig.getJsonObject("upload");
+  private static Integer folderDeep = uploadConfig.getInteger("folderDeep", 0);
+  private static Integer folderLen = uploadConfig.getInteger("folderLen", 3);
+  private static FileSystem fs = VertxApp.fs;
 
   public static void setup(String docRoot, int folderDeep, int folderLen, FileSystem fileSystem) {
     FSUtils.docsRoot = docRoot;

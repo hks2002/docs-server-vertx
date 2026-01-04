@@ -37,15 +37,9 @@ import lombok.extern.log4j.Log4j2;
 
 @Log4j2
 public class DMSServices {
-  private static String dmsServer = null;
-  private static String dmsServerFast = null;
-  private static FileSystem fs = null;
-
-  public DMSServices() {
-    dmsServer = VertxApp.appConfig.getString("dmsServer");
-    dmsServerFast = VertxApp.appConfig.getString("dmsServerFast");
-    fs = VertxApp.fs;
-  }
+  private static String dmsServer = VertxApp.appConfig.getString("dmsServer");
+  private static String dmsServerFast = VertxApp.appConfig.getString("dmsServerFast");
+  private static FileSystem fs = VertxApp.fs;
 
   public static void setup(String server, String serverFast, FileSystem fileSystem) {
     dmsServer = server;
@@ -397,9 +391,9 @@ public class DMSServices {
                 FSUtils.updateFileModifiedDate(tempFile, modifiedAt);
                 return Future.succeededFuture();
               }).compose(v -> {
-                return DocsService.moveFile(tempFile, fileName, "MOVE");
+                return new DocsService().moveFile(tempFile, fileName, "MOVE");
               }).andThen(v3 -> {
-                DocsService.addFileInfo(fileName, fileId);
+                new DocsService().addFileInfo(fileName, fileId);
               });
         });
   }
