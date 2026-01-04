@@ -6,7 +6,6 @@
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
-
 package com.da.docs.handler;
 
 import java.util.List;
@@ -80,14 +79,14 @@ public class UploadHandler implements Handler<RoutingContext> {
     String lastModified = context.request().getHeader("Last-Modified");
     FSUtils.updateFileModifiedDate(fromPath, lastModified);
 
-    DocsService.moveFile(fromPath, fileName, "UPDATE")
+    new DocsService().moveFile(fromPath, fileName, "UPDATE")
         .onFailure(ar -> {
           log.error("{}", ar.getMessage());
           LogService.addLog("DOC_UPLOAD_FAILED", ip, loginName, fullName, fileName);
           Response.internalError(context, "Upload file failed");
         })
         .compose(v -> {
-          return DocsService.addFileInfo(fileName, null);
+          return new DocsService().addFileInfo(fileName, null);
         })
         .onSuccess(rst -> {
           log.info("Upload file {} success", fileName);
