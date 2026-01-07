@@ -36,10 +36,9 @@ jobs:
                   chmod +x mvnw
                   ./mvnw test
 
-            - uses: googleapis/release-please-action@v3
+            - uses: googleapis/release-please-action@v4
               with:
                   release-type: maven
                   #package-name: release-please-action
                   token: ${{ secrets.GITHUB_TOKEN }}
-                  extra-files: |
-                    CHANGELOG.md
+                  config-file: release-please-config.json
