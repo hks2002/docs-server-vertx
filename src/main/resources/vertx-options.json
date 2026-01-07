@@ -1,7 +1,7 @@
 {
   "eventLoopPoolSize": 32,
   "workerPoolSize": 32,
-  "blockedThreadCheckInterval": 1000,
+  "blockedThreadCheckInterval": 2000,
   "maxEventLoopExecuteTime": 6000000000,
   "maxWorkerExecuteTime": 6000000000,
   "internalBlockingPoolSize": 32,
