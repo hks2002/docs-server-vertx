@@ -10,6 +10,10 @@
         "com.da.docs.WebServerVerticle",
         "--options=src/main/resources/vertx-options.json",
         "--conf=src/main/resources/config-dev.json"
+      ],
+      "vmArgs": [
+        "-Dlog4j.skipJansi=false",
+        "-Dlog4j.configurationFile=${workspaceFolder}/src/test/resources/log4j2.xml"
       ]
     },
     {
@@ -21,6 +25,10 @@
         "com.da.docs.WebServerVerticle",
         "--options=src/main/resources/vertx-options.json",
         "--conf=src/main/resources/config-prod.json"
+      ],
+      "vmArgs": [
+        "-Dlog4j.skipJansi=false",
+        "-Dlog4j.configurationFile=${workspaceFolder}/src/main/resources/log4j2.xml"
       ]
     }
   ]

@@ -24,7 +24,7 @@
   "editor.tabSize": 2,
   "editor.useTabStops": false,
   // for debug run
-  "java.debug.settings.vmArgs": "-Dlog4j.skipJansi=false",
+  "java.debug.settings.vmArgs": "",
   // for unit test
   "java.test.config": {
     "vmArgs": [
