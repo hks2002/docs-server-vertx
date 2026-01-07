@@ -6,15 +6,16 @@
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                          *
  ********************************************************************************************************************/
 
-
 package com.da.docs.handler;
 
 import java.util.Optional;
 
 import com.da.docs.annotation.GetMapping;
 import com.da.docs.service.DMSServices;
+import com.da.docs.service.MessageService;
 import com.da.docs.utils.Response;
 
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerRequest;
@@ -52,6 +53,7 @@ public class SearchDocsFromTLSNEWHandler implements Handler<RoutingContext> {
     HttpServerResponse response = context.response();
 
     String PN = request.getParam("PN").toUpperCase();
+    String userName = user.principal().getString("login_name");
 
     DMSServices.getDocuments(PN)
         .onSuccess(docs -> {
@@ -65,6 +67,54 @@ public class SearchDocsFromTLSNEWHandler implements Handler<RoutingContext> {
           log.error("Search docs from TLSNEW failed: {}, {}", PN, err.getMessage());
           response.putHeader(HttpHeaders.CONTENT_TYPE, "application/json");
           response.end("[]");
+        }).andThen(docs -> {
+          for (int i = 0; i < docs.result().size(); i++) {
+            JsonObject doc = docs.result().getJsonObject(i);
+            String name = doc.getString("name");
+            String fileId = doc.getString("fileId");
+            Long lastModified = doc.getLong("lastModified");
+
+            DMSServices.downloadDmsDocsCheck(name, lastModified)
+                .compose(checkResult -> {
+                  switch (checkResult) {
+                    case "SKIP":
+                      MessageService.sendMessageToUser(userName, JsonObject.of(
+                          "msg", "DMS_DOWNLOAD_SKIP",
+                          "name", name).encode());
+                      break;
+                    case "START":
+                      MessageService.sendMessageToUser(userName, JsonObject.of(
+                          "msg", "DMS_DOWNLOAD_START",
+                          "name", name).encode());
+                      break;
+                    case "REDOWNLOAD":
+                      MessageService.sendMessageToUser(userName, JsonObject.of(
+                          "msg", "DMS_DOWNLOAD_REDOWNLOAD",
+                          "name", name).encode());
+                      break;
+                  }
+                  return Future.succeededFuture(checkResult);
+                }).andThen(checkResult -> {
+                  if (checkResult.result().equals("START") || checkResult.result().equals("REDOWNLOAD")) {
+                    DMSServices.downloadDmsDocs(name, fileId, lastModified)
+                        .onSuccess(res -> {
+                          switch (res) {
+                            case "DOWNLOADED":
+                              MessageService.sendMessageToUser(userName, JsonObject.of(
+                                  "msg", "DMS_DOWNLOAD_SUCCESS",
+                                  "name", name).encode());
+                              break;
+                          }
+                        })
+                        .onFailure(err -> {
+                          MessageService.sendMessageToUser(userName, JsonObject.of(
+                              "msg", "DMS_DOWNLOAD_FAILURE",
+                              "name", name).encode());
+                        });
+                  }
+                });
+
+          }
         });
   }
 }

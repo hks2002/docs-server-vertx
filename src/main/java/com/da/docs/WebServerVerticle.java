@@ -6,10 +6,10 @@
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
-
 package com.da.docs;
 
 import com.da.docs.db.DB;
+import com.da.docs.handler.WebSocketHandler;
 
 import io.vertx.core.Future;
 import io.vertx.core.VerticleBase;
@@ -28,6 +28,7 @@ public class WebServerVerticle extends VerticleBase {
 
     return vertx.createHttpServer(new HttpServerOptions(httpConfig))
         .requestHandler(new WebRouter())
+        .webSocketHandler(new WebSocketHandler())
         .listen().onSuccess(http -> {
           log.info("HTTP server started on port {}", http.actualPort());
         });

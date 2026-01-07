@@ -6,7 +6,6 @@
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
-
 package com.da.docs.handler;
 
 import com.da.docs.annotation.AllMapping;
@@ -34,7 +33,7 @@ public class SessionHandler implements Handler<RoutingContext> {
         Response.unauthorized(context, "Session expired or not logged in");
         return;
       } else {// session cached user, no need to check again
-        log.debug("user: {} cached in session", u.principal());
+        log.trace("user: {} cached in session", u.principal());
         context.next();
       }
     }
