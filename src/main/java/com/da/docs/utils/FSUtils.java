@@ -26,12 +26,16 @@ import lombok.extern.log4j.Log4j2;
 
 @Log4j2
 public class FSUtils {
-  private static JsonObject docsConfig = VertxApp.appConfig.getJsonObject("docs");
+  // Static class, must be initialized, be careful the null value
+  private static JsonObject docsConfig = VertxApp.appConfig == null
+      ? JsonObject.of("docsRoot", JsonObject.of("windows", "C:/docs", "linux", "/home/docs"))
+      : VertxApp.appConfig.getJsonObject("docs");
   private static String docsRoot = Utils.isWindows()
       ? docsConfig.getJsonObject("docsRoot").getString("windows")
       : docsConfig.getJsonObject("docsRoot").getString("linux");
 
-  private static JsonObject uploadConfig = VertxApp.appConfig.getJsonObject("upload");
+  private static JsonObject uploadConfig = VertxApp.appConfig == null ? JsonObject.of("folderDeep", 0, "folderLen", 3)
+      : VertxApp.appConfig.getJsonObject("upload");
   private static Integer folderDeep = uploadConfig.getInteger("folderDeep", 0);
   private static Integer folderLen = uploadConfig.getInteger("folderLen", 3);
   private static FileSystem fs = VertxApp.fs;
@@ -99,6 +103,23 @@ public class FSUtils {
       updateFileModifiedDate(fileFullPath, Long.parseLong(timestamp));
     } catch (Exception e) {
       log.error("Failed parse long from String", timestamp);
+    }
+  }
+
+  /**
+   * Get the last modified time of a file
+   * 
+   * @param fileFullPath
+   * @return
+   */
+  public static Long getFileModifiedTime(String fileFullPath) {
+    try {
+      Path path = Path.of(fileFullPath);
+      FileTime fileTime = Files.getLastModifiedTime(path);
+      return fileTime.toInstant().toEpochMilli();
+    } catch (Exception e) {
+      log.error("Failed to update the modified date for file: {}", fileFullPath, e);
+      return 0L;
     }
   }
 

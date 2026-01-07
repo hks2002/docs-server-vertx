@@ -6,7 +6,6 @@
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
-
 package com.da.docs;
 
 import java.io.File;
@@ -129,6 +128,19 @@ public class TestMisc {
     } else {
       log.info("File not exists: {}", file.getAbsolutePath());
     }
+  }
+
+  @Test
+  public void testList() {
+    List<String> list = new ArrayList<>();
+    list.add("a");
+    list.add("b");
+    list.add("c");
+
+    list.remove(0);
+
+    log.info("List: {}", list);
+    log.info("Joined List: {}", String.join(", ", list));
   }
 
 }

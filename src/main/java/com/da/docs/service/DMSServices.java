@@ -10,10 +10,12 @@ package com.da.docs.service;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
@@ -22,13 +24,18 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.da.docs.VertxApp;
+import com.da.docs.pojo.Attachment;
+import com.da.docs.pojo.Attachments;
+import com.da.docs.pojo.ResultData;
 import com.da.docs.utils.FSUtils;
-import com.github.benmanes.caffeine.cache.CacheLoader;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.github.benmanes.caffeine.cache.AsyncCacheLoader;
+import com.github.benmanes.caffeine.cache.AsyncLoadingCache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.github.benmanes.caffeine.cache.RemovalListener;
 
 import io.vertx.core.Future;
+import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.file.FileSystem;
 import io.vertx.core.json.JsonArray;
@@ -37,9 +44,28 @@ import lombok.extern.log4j.Log4j2;
 
 @Log4j2
 public class DMSServices {
-  private static String dmsServer = VertxApp.appConfig.getString("dmsServer");
-  private static String dmsServerFast = VertxApp.appConfig.getString("dmsServerFast");
-  private static FileSystem fs = VertxApp.fs;
+  // Static class, must be initialized, be careful the null value
+  private static String dmsServer = VertxApp.appConfig == null ? "" : VertxApp.appConfig.getString("dmsServer");
+  private static String dmsServerFast = VertxApp.appConfig == null ? "" : VertxApp.appConfig.getString("dmsServerFast");
+  private static FileSystem fs = VertxApp.fs == null ? Vertx.vertx().fileSystem() : VertxApp.fs;
+
+  private String userName = "";
+
+  public DMSServices() {
+    log.warn("Creating DMSServices without userName, message can't send");
+  }
+
+  public DMSServices(String userName) {
+    this.userName = userName;
+  }
+
+  public String getUserName() {
+    return this.userName;
+  }
+
+  public void setUserName(String userName) {
+    this.userName = userName;
+  }
 
   public static void setup(String server, String serverFast, FileSystem fileSystem) {
     dmsServer = server;
@@ -51,7 +77,7 @@ public class DMSServices {
    * Login to DMS system, get session ID
    *
    * @param server DMS server
-   * @return
+   * @return Future with session ID
    */
   public static Future<String> doLogin(String server) {
     String url = server
@@ -59,6 +85,8 @@ public class DMSServices {
 
     return HttpService.get(url)
         .compose(html -> {
+          log.info("Login success, received HTML response");
+
           String id = "";
           Pattern pattern = Pattern.compile("sSessionID = '(.*?)';");
           Matcher matcher = pattern.matcher(html);
@@ -70,8 +98,9 @@ public class DMSServices {
           log.debug("id: {}", id);
           return Future.succeededFuture(id);
         })
-        .onFailure(e -> {
-          log.error("Login failed: {}", e.getCause());
+        .recover(throwable -> {
+          log.error("Login failed: {}", throwable.getMessage());
+          return Future.succeededFuture("");
         });
   }
 
@@ -81,31 +110,28 @@ public class DMSServices {
    * @param server    DMS server
    * @param sessionId Current session ID
    */
-  private static void doLogout(String server, String sessionId) {
+  private static Future<Void> doLogout(String server, String sessionId) {
+    if (sessionId == null || sessionId.isEmpty()) {
+      return Future.succeededFuture(); // nothing to do
+    }
+
     String url = server
         + "/cocoon/View/LogoutXML/fr/AW_Logout7.html?userName=TEMP&dsn=dmsDS&Client_Type=25&AUSessionID="
         + sessionId;
 
-    HttpService.get(url)
+    return HttpService.get(url)
         .onSuccess(res -> {
           log.debug("Logout success: {}", sessionId);
         })
         .onFailure(e -> {
           log.error("Logout failed: {}", e.getCause());
-        });
+        })
+        .mapEmpty();
   }
 
   // Cache loader for DMS session
-  private static CacheLoader<String, String> cacheLoader = new CacheLoader<String, String>() {
-    @Override
-    public String load(String server) {
-      try {
-        return doLogin(server).toCompletionStage().toCompletableFuture().get();
-      } catch (Exception e) {
-        log.error("DMS Login error: {}", e.getCause());
-        return "";
-      }
-    }
+  private static final AsyncCacheLoader<String, String> asyncCacheLoader = (key, executor) -> {
+    return doLogin(key).toCompletionStage().toCompletableFuture();
   };
 
   // Removal listener for DMS session
@@ -115,140 +141,159 @@ public class DMSServices {
   };
 
   // DMS session cache
-  private static LoadingCache<String, String> dmsSessionCache = Caffeine
+  private static final AsyncLoadingCache<String, String> dmsSessionCache = Caffeine
       .newBuilder()
       .expireAfterAccess(10, TimeUnit.MINUTES)
       .removalListener(removalListener)
-      .build(cacheLoader);
+      .buildAsync(asyncCacheLoader);
 
-  /**
-   * Extract
-   * <LI>values from XML content
-   *
-   * @param xmlContent
-   * @return
-   */
-  private static List<String> extractLIValues(String xmlContent) {
-    List<String> liValues = new ArrayList<>();
-    Pattern pattern = Pattern.compile("<LI>(.*?)</LI>");
-    Matcher matcher = pattern.matcher(xmlContent);
-
-    while (matcher.find()) {
-      liValues.add(matcher.group(1));
-    }
-
-    log.debug("liValues: {}", liValues);
-    return liValues;
+  private static String btoa(String str) {
+    return Base64.getEncoder().encodeToString(str.getBytes(StandardCharsets.UTF_8));
   }
 
-  /**
-   * Extract file ID from HTML content
-   *
-   * @param htmlContent
-   * @return
-   */
-  private static String extractFileId(String htmlContent) {
-    Pattern pattern = Pattern.compile("var id\t\t= '(.*?)';");
-    Matcher matcher = pattern.matcher(htmlContent);
-    String id = null;
-    while (matcher.find()) {
-      id = matcher.group(1);
-    }
-    log.debug("fileId: {}", id);
-    return id;
-  }
-
-  /**
-   * Extract modified date from HTML content
-   *
-   * @param htmlContent
-   * @return
-   */
-  private static String extractModifiedDate(String htmlContent) {
-    log.debug("extractModifiedDate\n{}", htmlContent);
-    String date = null;
-    Pattern pattern = Pattern.compile("<td data-name-attr=\"obj_modificationdate\" nowrap=\"1\">(.*?)</td>");
-    Matcher matcher = pattern.matcher(htmlContent);
-
-    while (matcher.find()) {
-      date = matcher.group(1);
-    }
-
-    log.debug("modifiedDate: {}", date);
-    return date;
-  }
-
-  private static String base64Encode(String value) {
+  private static String encodeURIComponent(String str) {
     try {
-      return Base64.getEncoder().encodeToString(URLEncoder.encode(value, "UTF-8").getBytes());
+      return URLEncoder.encode(str, "UTF-8")
+          // JS的encodeURIComponent不会编码这些字符：! ' ( ) ~, 恢复这些值
+          .replace("+", "%20")
+          .replace("%21", "!")
+          .replace("%27", "'")
+          .replace("%28", "(")
+          .replace("%29", ")")
+          .replace("%7E", "~");
     } catch (UnsupportedEncodingException e) {
-      log.error(e.getCause());
+      log.error(e.getMessage());
+    }
+    return null;
+  }
+
+  public static String au_URLEncode(String str) {
+    try {
+      return btoa(encodeURIComponent(str));
+    } catch (Exception e) {
+      log.error(e.getMessage());
     }
     return null;
   }
 
   /**
-   * Get document names from DMS system
+   * Get object ids by attachment file name from DMS system
    *
    * @param server    DMS server
    * @param sessionId Current session ID
-   * @param Pn        Project number or similar identifier, used to filter
+   * @param filename  Filename used to filter
    *                  documents
-   * @return Returns a list of document names
+   * @return Returns a list of document object IDs
    */
-  private static Future<List<String>> getDocumentNames(String server, String sessionId, String Pn) {
-    String search = base64Encode("%" + Pn);
+  private static Future<List<String>> getObjectIds(String server, String sessionId, String filename) {
+    String search = "UPPER(F.nomfich) LIKE '*" + filename.toUpperCase() + "*'";
+    String search_encode = au_URLEncode(search);
 
-    String url = String.format(
-        server + "/cocoon/View/ExecuteService/fr/AW_AuplResult3.html?" +
-            "ServiceName=aws.au&ServiceSubPackage=aws&UserName=TEMP&dsn=dmsDS&Client_Type=25&ServiceParameters=GET_AUTOCOMPLETION@%s@&AUSessionID=%s",
-        search,
+    String url = String.format(server
+        + "/cocoon/View/ExecuteService.xml?"
+        + "ServiceName=aws.au"
+        + "&ServiceSubPackage=aws"
+        + "&ServiceParameters=EVALUATE_SEARCH_CONTEXT"
+        + "@DOCUMENT"
+        + "@%s"
+        + "@@@@0@@0@"
+        + "&AUSessionID=%s",
+        search_encode,
         sessionId);
 
     return HttpService.get(url)
         .compose(xml -> {
-          List<String> liValues = extractLIValues(xml);
-          List<String> result = new ArrayList<>();
+          XmlMapper xmlMapper = new XmlMapper();
+          try {
+            ResultData resultData = xmlMapper.readValue(xml, ResultData.class);
+            log.debug("Get object ids by file name response: {}", resultData);
 
-          for (int i = 0; i < liValues.size(); i++) {
-            // only files with extension
-            if (liValues.get(i).indexOf('.') == -1) {
-              continue;
+            if (resultData.getResults().isEmpty()) {
+              return Future.succeededFuture(new ArrayList<>());
             }
-            result.add(liValues.get(i));
+
+            int resultCode = resultData.getResults().get(0).getResultCode();
+            if (resultCode != 0) {
+              return Future.failedFuture("DMS service search error: " + resultCode);
+            }
+
+            String resultDetail = resultData.getResults().get(0).getResultDetail();
+            String[] parts = resultDetail.split("\\|");
+            List<String> fileIds = new ArrayList<>(Arrays.asList(parts));
+            fileIds.remove(0);
+
+            log.debug("Get object ids by file name succeeded: {}", fileIds);
+            return Future.succeededFuture(fileIds);
+          } catch (Exception e) {
+            log.error("Get object ids failed: {}", e.getMessage());
+            return Future.failedFuture(e.getMessage());
           }
-          log.debug("Document names: {}", result);
-          return Future.succeededFuture(result);
-        }).recover(e -> {
-          log.error("Get document names failed: {}", e.getCause());
-          return Future.failedFuture(e.getMessage());
+
         });
   }
 
-  /**
-   * Get file information from DMS system
-   *
-   * @param server    DMS server
-   * @param sessionId Current session ID
-   * @param FileName  Name of the file to search for
-   * @return Returns the HTML content containing file information
-   */
-  private static Future<String> getFileInfo(String server, String sessionId, String FileName) {
-    String search = base64Encode(FileName);
-
-    String url = String.format(
-        server + "/cocoon/View/ExecuteService/fr/AW_QuickSearchView7.post?" +
-            "ServiceName=aws.au&ServiceParameters=GET_OBJECTS_LIST@SEARCH@%s@@@0@9999@0@&ServiceSubPackage=aws&URL_Encoding=UTF-8&date_format=enDateHour&AUSessionID=%s",
-        search,
-        sessionId);
+  private static Future<List<JsonObject>> getAttachmentInfos(String server, String sessionId, String objectId) {
+    String url = String.format(server
+        + "/cocoon/View/Attachments.xml?"
+        + "UserName=TEMP"
+        + "&dsn=dmsDS"
+        + "&Client_Type=25"
+        + "&ProjectContextID=9999"
+        + "&objectID=%s"
+        + "&AUSessionID=%s",
+        objectId, sessionId);
 
     return HttpService.get(url)
-        .compose(html -> {
-          return Future.succeededFuture(html);
-        })
-        .recover(e -> {
-          log.error("Get file info failed: {}", e.getCause());
-          return Future.failedFuture(e.getMessage());
+        .compose(xml -> {
+
+          XmlMapper xmlMapper = new XmlMapper();
+          Attachments attachments = null;
+          try {
+            attachments = xmlMapper.readValue(xml, Attachments.class);
+          } catch (Exception e) {
+            log.error("Get attachment infos failed: {}", e.getMessage());
+            return Future.failedFuture(e.getMessage());
+          }
+          log.debug("Get attachment infos response: {}", attachments);
+
+          // this formatter is decided by DMS system server settings only
+          DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy hh:mm:ss a", Locale.ENGLISH);
+          List<JsonObject> result = new ArrayList<>();
+
+          for (Attachment a : attachments.getAttachments()) {
+            Long fileId = a.getId();
+            String dateString = a.getDateModif();
+            String documentName = a.getName();
+
+            LocalDateTime modifiedAt = null;
+            // skip null modified date attachment
+            if (dateString == null) {
+              break;
+            }
+
+            try {
+              modifiedAt = LocalDateTime.parse(dateString, formatter);
+            } catch (Exception e) {
+              log.error("Error parsing date for document {}: {}", documentName, e.getMessage());
+              break;
+            }
+            long modifiedAtEpoch = modifiedAt.toInstant(ZoneOffset.UTC).toEpochMilli();
+
+            // Create a Docs object and set its properties
+            JsonObject doc = new JsonObject();
+            doc.put("name", documentName);
+            doc.put("lastModified", modifiedAtEpoch);
+            doc.put("size", a.getSize());
+            doc.put("format", a.getFormat());
+            doc.put("objectId", objectId);
+            doc.put("fileId", fileId);
+
+            log.debug("Document processed: {}", doc);
+            result.add(doc);
+          }
+          log.debug("Get attachment infos succeeded: {}", result);
+          return Future.succeededFuture(result);
+
         });
   }
 
@@ -263,14 +308,23 @@ public class DMSServices {
   private static Future<Buffer> getDocumentBuffer(String fileId, String fileName) {
 
     // 581 bugs, means login required, remove session, it works again
-    String url = dmsServer + "/cocoon/viewDocument/ANY?FileID=" + fileId + "&UserName=TEMP&dsn=dmsDS&Client_Type=25";
-    String urlFast = dmsServerFast + "/cocoon/viewDocument/ANY?FileID=" + fileId
-        + "&UserName=TEMP&dsn=dmsDS&Client_Type=25";
+    String url = dmsServer
+        + "/cocoon/viewDocument/ANY?"
+        + "FileID=" + fileId
+        + "&UserName=TEMP"
+        + "&dsn=dmsDS"
+        + "&Client_Type=25";
+    String urlFast = dmsServerFast
+        + "/cocoon/viewDocument/ANY?"
+        + "FileID=" + fileId
+        + "&UserName=TEMP"
+        + "&dsn=dmsDS"
+        + "&Client_Type=25";
 
     return HttpService.getFile(urlFast)
         .compose(bytes -> {
           if (bytes.length() == 0 || bytes.length() == 581) {
-            dmsSessionCache.invalidate(dmsServerFast);
+            dmsSessionCache.synchronous().invalidate(dmsServerFast);
             log.error("[Dms][DOWNLOAD] {} from Dms server, size {}", fileName, bytes.length());
             return Future.failedFuture("Invalid file size");
           }
@@ -281,7 +335,7 @@ public class DMSServices {
           return HttpService.getFile(url)
               .compose(bytes -> {
                 if (bytes.length() == 0 || bytes.length() == 581) {
-                  dmsSessionCache.invalidate(dmsServer);
+                  dmsSessionCache.synchronous().invalidate(dmsServer);
                   log.error("[Dms][DOWNLOAD] {} from Dms server, size {}", fileName, bytes.length());
                   return Future.failedFuture("Invalid file size");
                 }
@@ -297,67 +351,71 @@ public class DMSServices {
    * @return Returns a Future with a list of document information objects
    */
   public static Future<JsonArray> getDocuments(String Pn) {
-    String sessionId = dmsSessionCache.getIfPresent(dmsServer);
-    dmsSessionCache.getIfPresent(dmsServerFast); // make the fast server session cached too, so that fast download works
+    Future<String> f1 = Future.fromCompletionStage(dmsSessionCache.get(dmsServer));
+    dmsSessionCache.get(dmsServerFast);
 
-    return getDocumentNames(dmsServer, sessionId, Pn)
-        .compose(documentNames -> {
-          JsonArray docs = new JsonArray();
-          List<Future<JsonObject>> docFutures = new ArrayList<>();
+    return f1.compose(sessionId -> {
+      return getObjectIds(dmsServer, sessionId, Pn)
+          .compose(objIds -> {
+            // if no object ids, return empty array immediately
+            if (objIds == null || objIds.isEmpty()) {
+              return Future.succeededFuture(new JsonArray());
+            }
 
-          for (String documentName : documentNames) {
-            Future<JsonObject> docFuture = getFileInfo(dmsServer, sessionId, documentName)
-                .compose(html -> {
-                  String fileId = extractFileId(html);
-                  String dateString = extractModifiedDate(html);
+            // collect futures that retrieve attachment lists for each object id
+            List<Future<List<JsonObject>>> attachmentFutures = new ArrayList<>();
+            for (String objId : objIds) {
+              log.debug("Fetching attachment info for object ID: {} {}", objId, sessionId);
+              attachmentFutures.add(getAttachmentInfos(dmsServer, sessionId, objId));
+            }
 
-                  if (dateString == null) {
-                    return Future.failedFuture("DateString is null");
+            // When all attachment futures complete, aggregate all sub-lists into a single
+            // JsonArray
+            return Future.all(attachmentFutures)
+                .map(composite -> {
+                  JsonArray docs = new JsonArray();
+                  for (int i = 0; i < composite.size(); i++) {
+                    @SuppressWarnings("unchecked")
+                    List<JsonObject> subList = (List<JsonObject>) composite.resultAt(i);
+                    if (subList != null) {
+                      for (JsonObject doc : subList) {
+                        docs.add(doc);
+                      }
+                    }
                   }
-
-                  LocalDateTime modifiedAt = null;
-                  DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy hh:mm:ss a", Locale.ENGLISH);
-                  try {
-                    modifiedAt = LocalDateTime.parse(dateString, formatter);
-                  } catch (Exception e) {
-                    log.error("Error parsing date for document {}: {}", documentName, e.getMessage());
-                    return Future.failedFuture("Error parsing date for document");
-                  }
-                  long modifiedAtEpoch = modifiedAt.toInstant(ZoneOffset.UTC).toEpochMilli();
-
-                  // Create a Docs object and set its properties
-                  JsonObject doc = new JsonObject();
-                  doc.put("file_name", documentName);
-                  doc.put("doc_modified_at", modifiedAtEpoch);
-                  doc.put("file_id", fileId);
-
-                  // Download the document and save to database
-                  downloadDmsDocs(documentName, fileId, modifiedAtEpoch);
-
-                  return Future.succeededFuture(doc);
-                }).compose(v -> {
-                  // only return successful docs
-                  return Future.succeededFuture(v);
+                  return docs;
+                }).otherwise(e -> {
+                  log.error("Error processing documents: {}", e.getMessage());
+                  return new JsonArray(); // return empty array on error
                 });
+          });
+    });
+  }
 
-            docFutures.add(docFuture);
-          }
+  /**
+   * Check before download documents from DMS system
+   *
+   * @param fileName   the file name
+   * @param modifiedAt the modified date
+   * @return SKIP or START
+   */
+  public static Future<String> downloadDmsDocsCheck(String fileName, Long modifiedAt) {
+    // get the destination folder
+    String toSubFolder = FSUtils.getFolderPathByFileName(fileName);
+    String toFolderFullPath = FSUtils.getDocsRoot() + '/' + toSubFolder;
+    String toFileFullPath = toFolderFullPath + '/' + fileName;
 
-          // When all futures complete, collect results into docs array
-          return Future.all(docFutures)
-              .map(composite -> {
-                for (int i = 0; i < composite.size(); i++) {
-                  JsonObject doc = composite.resultAt(i);
-                  docs.add(doc);
-                }
-                return docs;
-              }).otherwise(e -> {
-                log.error("Error processing documents: {}", e.getCause());
-                e.printStackTrace();
-                return new JsonArray(); // return empty array on error
-              });
-        });
-
+    if (FSUtils.isFileExists(toFileFullPath)) {
+      if (FSUtils.getFileModifiedTime(toFileFullPath) >= modifiedAt) {
+        log.debug("[Dms][DOWNLOAD] {} exists and is up-to-date, skip download", fileName);
+        return Future.succeededFuture("SKIP");
+      } else {
+        fs.deleteBlocking(toFileFullPath);
+        log.info("[Dms][DOWNLOAD] {} exists and is outdated, re-downloading", fileName);
+        return Future.succeededFuture("REDOWNLOAD");
+      }
+    }
+    return Future.succeededFuture("START");
   }
 
   /**
@@ -368,16 +426,7 @@ public class DMSServices {
    * @param modifiedAt the modified date
    * @return Future with temp file path
    */
-  public static Future<Void> downloadDmsDocs(String fileName, String fileId, Long modifiedAt) {
-    // get the destination folder
-    String toSubFolder = FSUtils.getFolderPathByFileName(fileName);
-    String toFolderFullPath = FSUtils.getDocsRoot() + '/' + toSubFolder;
-    String toFileFullPath = toFolderFullPath + '/' + fileName;
-
-    if (FSUtils.isFileExists(toFileFullPath)) {
-      log.debug("[Dms][DOWNLOAD] {} exists, skip download", fileName);
-      return Future.succeededFuture();
-    }
+  public static Future<String> downloadDmsDocs(String fileName, String fileId, Long modifiedAt) {
     log.info("[Dms][DOWNLOAD] start download {} from Dms server", fileName);
 
     return Future.all(fs.createTempFile(null, null), getDocumentBuffer(fileId, fileName))
@@ -394,6 +443,8 @@ public class DMSServices {
                 return new DocsService().moveFile(tempFile, fileName, "MOVE");
               }).andThen(v3 -> {
                 new DocsService().addFileInfo(fileName, fileId);
+              }).compose(v -> {
+                return Future.succeededFuture("DOWNLOADED");
               });
         });
   }
