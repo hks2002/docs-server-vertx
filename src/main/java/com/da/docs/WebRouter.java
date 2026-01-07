@@ -20,6 +20,7 @@ import com.da.docs.annotation.AllMapping;
 import com.da.docs.annotation.DeleteMapping;
 import com.da.docs.annotation.GetMapping;
 import com.da.docs.annotation.PostMapping;
+import com.da.docs.utils.CommonUtils;
 import com.da.docs.utils.PackageUtils;
 
 import io.vertx.core.Handler;
@@ -149,10 +150,11 @@ public class WebRouter extends RouterImpl {
     var pathsHandler = getPathHandler("com.da.docs.handler");
 
     pathsHandler.forEach((path, handler) -> {
-      log.info("{} {} {}", handler.getKey(), path, handler.getValue());
       HttpMethod method = handler.getKey();
       Class<?> handlerClass = handler.getValue();
       Object handlerInstance = getHandlerInstance(handlerClass);
+
+      log.info("{} {} {}", CommonUtils.withRightPad(method.name(), 5, ' '), path, handlerClass.getName());
 
       if (Handler.class.isAssignableFrom(handlerClass)) {
         super.route(method, path).handler((Handler<RoutingContext>) handlerInstance);
