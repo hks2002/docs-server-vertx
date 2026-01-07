@@ -44,28 +44,27 @@ public class HttpService {
 
   public static Future<String> request(HttpMethod method, String url, JSObject data) {
     HttpRequest<Buffer> request = null;
-    if (method == HttpMethod.GET) {
-      request = client.getAbs(url);
-    } else if (method == HttpMethod.POST) {
-      request = client.postAbs(url);
-    } else if (method == HttpMethod.PUT) {
-      request = client.putAbs(url);
-    } else if (method == HttpMethod.DELETE) {
-      request = client.deleteAbs(url);
-    } else {
-      request = client.getAbs(url);
+
+    switch (method.name()) {
+      case "GET" -> request = client.getAbs(url);
+      case "POST" -> request = client.postAbs(url);
+      case "PUT" -> request = client.putAbs(url);
+      case "DELETE" -> request = client.deleteAbs(url);
+      default -> request = client.getAbs(url);
     }
 
-    if (data != null) {
+    Future<HttpResponse<Buffer>> response = null;
+    if (data != null && (method == HttpMethod.POST || method == HttpMethod.PUT)) {
       request.putHeader("Content-Type", "application/json");
       request.putHeader("Accept", "application/json");
-      request.sendJson(data);
+      response = request.sendJson(data);
+    } else {
+      response = request.send();
     }
-    Future<HttpResponse<Buffer>> response = request.send();
 
     return response.compose(res -> {
       log.debug("{} {}", method, url);
-      log.debug(res.body());
+      log.debug("\n{}", res.body());
       return Future.succeededFuture(res.bodyAsString());
     }).onFailure(err -> {
       log.error("HTTP {} request to {} failed: {}", method, url, err.getMessage());
