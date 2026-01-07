@@ -69,8 +69,12 @@ public class UserService {
         });
   }
 
-  public Future<Object> modifyUser(JsonObject obj) {
-    return DB.updateByFile("updateUser", obj);
+  public Future<Object> modifyUser(JsonObject obj, String ip) {
+    return DB.updateByFile("updateUser", obj).onSuccess(ar -> {
+      LogService.addLog("USER_UPDATE_SUCCESS", ip, obj.getString("login_name"), obj.getString("full_name"));
+    }).onFailure(err -> {
+      LogService.addLog("USER_UPDATE_FAILED", ip, obj.getString("login_name"), obj.getString("full_name"));
+    });
   }
 
   public Future<List<JsonObject>> searchUser() {
@@ -168,6 +172,11 @@ public class UserService {
                           return setUserPermission(user, ip);
                         });
                   } else if (userSearched.size() == 1) {
+                    if (userSearched.get(0).getString("first_name").equals(useInfo.getString("first_name")) ||
+                        userSearched.get(0).getString("last_name").equals(useInfo.getString("last_name")) ||
+                        userSearched.get(0).getString("last_name").equals(useInfo.getString("last_name"))) {
+                      modifyUser(useInfo, ip);
+                    }
                     return setUserPermission(user, ip);
                   } else {
                     // should never happened, login name is unique by database
