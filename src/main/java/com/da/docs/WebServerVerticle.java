@@ -36,7 +36,6 @@ public class WebServerVerticle extends VerticleBase {
 
   @Override
   public Future<?> stop() {
-    DB.closeAll();
     return Future.succeededFuture();
   }
 }

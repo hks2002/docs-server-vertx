@@ -8,10 +8,8 @@
 
 package com.da.docs.db;
 
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -19,11 +17,17 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.da.docs.VertxApp;
-import com.da.docs.utils.ResultSetUtils;
-import com.zaxxer.hikari.HikariDataSource;
 
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.net.ClientSSLOptions;
+import io.vertx.mssqlclient.MSSQLBuilder;
+import io.vertx.mssqlclient.MSSQLConnectOptions;
+import io.vertx.mysqlclient.MySQLBuilder;
+import io.vertx.mysqlclient.MySQLConnectOptions;
+import io.vertx.sqlclient.Pool;
+import io.vertx.sqlclient.PoolOptions;
+import io.vertx.sqlclient.Row;
 import lombok.extern.log4j.Log4j2;
 
 /**
@@ -34,61 +38,28 @@ import lombok.extern.log4j.Log4j2;
  */
 @Log4j2
 public class DB {
-  private static HikariDataSource[] pools = new HikariDataSource[2];
+  private static Pool[] pools = new Pool[2];
 
   public static void initDB() {
-    JsonObject mysqlConfig = VertxApp.appConfig.getJsonObject("mysql");
-    JsonObject mssqlConfig = VertxApp.appConfig.getJsonObject("mssql");
+    MySQLConnectOptions mysqlOptions = new MySQLConnectOptions(VertxApp.appConfig.getJsonObject("mysql"));
+    MSSQLConnectOptions mssqlOptions = new MSSQLConnectOptions(VertxApp.appConfig.getJsonObject("mssql"));
+    ClientSSLOptions sslOptions = new ClientSSLOptions().setTrustAll(true);
+    mssqlOptions.setSslOptions(sslOptions);
 
-    JsonObject mysqlPoolOptions = mysqlConfig.getJsonObject("poolOptions", new JsonObject());
-    JsonObject mssqlPoolOptions = mssqlConfig.getJsonObject("poolOptions", new JsonObject());
+    PoolOptions mysqlPoolOptions = new PoolOptions(VertxApp.appConfig.getJsonObject("mysqlPoolOptions"));
+    PoolOptions mssqlPoolOptions = new PoolOptions(VertxApp.appConfig.getJsonObject("mssqlPoolOptions"));
 
-    @SuppressWarnings("resource")
-    HikariDataSource mysqlDS = new HikariDataSource();
-    mysqlDS.setJdbcUrl(mysqlConfig.getString("jdbcUrl", "jdbc:mysql://localhost:3306/docs"));
-    mysqlDS.setUsername(mysqlConfig.getString("user", "docs"));
-    mysqlDS.setPassword(mysqlConfig.getString("password", "<PASSWORD>"));
-    if (mysqlPoolOptions.containsKey("minimumIdle")) {
-      mysqlDS.setMinimumIdle(mysqlPoolOptions.getInteger("minimumIdle"));
-    }
-    if (mysqlPoolOptions.containsKey("maximumPoolSize")) {
-      mysqlDS.setMaximumPoolSize(mysqlPoolOptions.getInteger("maximumPoolSize"));
-    }
-    if (mysqlPoolOptions.containsKey("idleTimeout")) {
-      mysqlDS.setIdleTimeout(mysqlPoolOptions.getLong("idleTimeout"));
-    }
-    if (mysqlPoolOptions.containsKey("maxLifetime")) {
-      mysqlDS.setMaxLifetime(mysqlPoolOptions.getLong("maxLifetime"));
-    }
+    Pool mysqlClient = MySQLBuilder.pool()
+        .with(mysqlPoolOptions)
+        .connectingTo(mysqlOptions)
+        .build();
+    Pool mssqlClient = MSSQLBuilder.pool()
+        .with(mssqlPoolOptions)
+        .connectingTo(mssqlOptions)
+        .build();
 
-    @SuppressWarnings("resource")
-    HikariDataSource mssqlDS = new HikariDataSource();
-    mssqlDS.setJdbcUrl(mssqlConfig.getString("jdbcUrl", "jdbc:sqlserver://localhost:3306/docs"));
-    mssqlDS.setUsername(mssqlConfig.getString("user", "docs"));
-    mssqlDS.setPassword(mssqlConfig.getString("password", "<PASSWORD>"));
-    if (mssqlPoolOptions.containsKey("minimumIdle")) {
-      mssqlDS.setMinimumIdle(mssqlPoolOptions.getInteger("minimumIdle"));
-    }
-    if (mssqlPoolOptions.containsKey("maximumPoolSize")) {
-      mssqlDS.setMaximumPoolSize(mssqlPoolOptions.getInteger("maximumPoolSize"));
-    }
-    if (mssqlPoolOptions.containsKey("idleTimeout")) {
-      mssqlDS.setIdleTimeout(mssqlPoolOptions.getLong("idleTimeout"));
-    }
-    if (mssqlPoolOptions.containsKey("maxLifetime")) {
-      mssqlDS.setMaxLifetime(mssqlPoolOptions.getLong("maxLifetime"));
-    }
-
-    DB.pools[0] = mysqlDS;
-    DB.pools[1] = mssqlDS;
-  }
-
-  public static void closeAll() {
-    for (HikariDataSource ds : pools) {
-      if (ds != null && !ds.isClosed()) {
-        ds.close();
-      }
-    }
+    DB.pools[0] = mysqlClient;
+    DB.pools[1] = mssqlClient;
   }
 
   public static Future<Boolean> validate(String sqlTemplate, JsonObject json) {
@@ -127,39 +98,30 @@ public class DB {
   }
 
   public static Future<List<JsonObject>> queryBySql(String sqlTemplate, JsonObject json, int dbIdx) {
+    // deep copy to avoid modify the original json
+    JsonObject limitJson = json.copy();
     if (!json.containsKey("offset")) {
-      json.put("offset", 0);
+      limitJson.put("offset", 0);
     }
     if (!json.containsKey("limit")) {
-      json.put("limit", 100);
+      limitJson.put("limit", 100);
     }
 
-    return validate(sqlTemplate, json).compose(valid -> {
-      Connection conn = null;
-      String sql = null;
-      try {
-        conn = pools[dbIdx].getConnection();
-        sql = replacePlaceholder(sqlTemplate, json);
-        Statement stmt = conn.createStatement();
-        var rs = stmt.executeQuery(sql);
-        List<JsonObject> list = ResultSetUtils.toList(rs);
+    return validate(sqlTemplate, limitJson).compose(valid -> {
+      String sql = replacePlaceholder(sqlTemplate, limitJson);
+      return pools[dbIdx].query(sql)
+          .execute()
+          .compose(rowSet -> {
+            List<JsonObject> list = new ArrayList<>();
+            for (Row row : rowSet) {
+              list.add(row.toJson());
+            }
 
-        log.trace("{}\n\n{}\n", sql, list.toString());
-        conn.close();
-        return Future.succeededFuture(list);
-
-      } catch (Exception e) {
-        log.error("{}\n\n{}\n\n{}\n", e.getMessage(), sql, json.encodePrettily());
-        if (conn != null) {
-          try {
-            conn.close();
-          } catch (SQLException e1) {
-            log.error("Failed to close connection: {}", e1.getCause());
-          }
-        }
-        return Future.failedFuture("Run SQL error");
-      }
-
+            return Future.succeededFuture(list);
+          })
+          .onFailure(e -> {
+            log.error("{}\n\n{}\n\n{}\n", e.getMessage(), sql, limitJson.encodePrettily());
+          });
     });
   }
 
@@ -181,45 +143,35 @@ public class DB {
     return queryByFile(sqlFileName, json, 0);
   }
 
-  public static Future<Object> insertBySql(String sqlTemplate, JsonObject json, int dbIdx) {
-    json.put("create_at", LocalDateTime.now());
-    json.put("create_by", 0);
+  public static Future<Integer> insertBySql(String sqlTemplate, JsonObject json, int dbIdx) {
+    // deep copy to avoid modify the original json
+    JsonObject updateJson = json.copy();
+    updateJson.put("create_at", LocalDateTime.now());
+    updateJson.put("create_by", 0);
 
-    return validate(sqlTemplate, json).compose(valid -> {
-      Connection conn = null;
-      String sql = null;
-      try {
-        conn = pools[dbIdx].getConnection();
-        sql = replacePlaceholder(sqlTemplate, json);
-        Statement stmt = conn.createStatement();
-        int rs = stmt.executeUpdate(sql);
-        conn.close();
-
-        log.trace("{}\n\n{}\n", sql, rs);
-        if (rs == 0) {
-          return Future.failedFuture("Insert failed, no rows affected");
-        }
-        return Future.succeededFuture(rs);
-      } catch (Exception e) {
-        log.error("{}\n{}\n{}\n", e.getMessage(), sql, json.encodePrettily());
-        if (conn != null) {
-          try {
-            conn.close();
-          } catch (SQLException e1) {
-            log.error("Failed to close connection: {}", e1.getCause());
-          }
-        }
-        return Future.failedFuture("Run SQL error");
-      }
+    return validate(sqlTemplate, updateJson).compose(valid -> {
+      String sql = replacePlaceholder(sqlTemplate, updateJson);
+      return pools[dbIdx].query(sql)
+          .execute()
+          .compose(rowSet -> {
+            Integer affected = rowSet.rowCount();
+            if (affected > 0) {
+              return Future.succeededFuture(affected);
+            } else {
+              return Future.failedFuture("Insert failed: no rows affected");
+            }
+          })
+          .onFailure(e -> {
+            log.error("{}\n\n{}\n\n{}\n", e.getMessage(), sql, updateJson.encodePrettily());
+          });
     });
-
   }
 
-  public static Future<Object> insertBySql(String sqlTemplate, JsonObject json) {
+  public static Future<Integer> insertBySql(String sqlTemplate, JsonObject json) {
     return insertBySql(sqlTemplate, json, 0);
   }
 
-  public static Future<Object> insertByFile(String sqlFileName, JsonObject json, int dbIdx) {
+  public static Future<Integer> insertByFile(String sqlFileName, JsonObject json, int dbIdx) {
     return VertxApp.fs.readFile("sqlTemplate/" + sqlFileName + ".sql")
         .onFailure(ar -> {
           log.error("{}", ar.getCause());
@@ -229,46 +181,39 @@ public class DB {
         });
   }
 
-  public static Future<Object> insertByFile(String sqlFileName, JsonObject json) {
+  public static Future<Integer> insertByFile(String sqlFileName, JsonObject json) {
     return insertByFile(sqlFileName, json, 0);
   }
 
-  public static Future<Object> updateBySql(String sqlTemplate, JsonObject json, int dbIdx) {
-    json.put("update_at", LocalDateTime.now());
-    json.put("update_by", 0);
+  public static Future<Integer> updateBySql(String sqlTemplate, JsonObject json, int dbIdx) {
+    // deep copy to avoid modify the original json
+    JsonObject updateJson = json.copy();
+    updateJson.put("update_at", LocalDateTime.now());
+    updateJson.put("update_by", 0);
 
-    return validate(sqlTemplate, json).compose(valid -> {
-      Connection conn = null;
-      String sql = null;
-      try {
-        conn = pools[dbIdx].getConnection();
-        sql = replacePlaceholder(sqlTemplate, json);
-        Statement stmt = conn.createStatement();
-        int rs = stmt.executeUpdate(sql);
-        conn.close();
-
-        log.trace("{}\n\n{}\n", sql, rs);
-        return Future.succeededFuture(rs);
-      } catch (Exception e) {
-        log.error("{}\n{}\n{}\n", e.getMessage(), sql, json.encodePrettily());
-        if (conn != null) {
-          try {
-            conn.close();
-          } catch (SQLException e1) {
-            log.error("Failed to close connection: {}", e1.getCause());
-          }
-        }
-        return Future.failedFuture("Run SQL error");
-      }
+    return validate(sqlTemplate, updateJson).compose(valid -> {
+      String sql = replacePlaceholder(sqlTemplate, updateJson);
+      return pools[dbIdx].query(sql)
+          .execute()
+          .compose(rowSet -> {
+            Integer affected = rowSet.rowCount();
+            if (affected > 0) {
+              return Future.succeededFuture(affected);
+            } else {
+              return Future.failedFuture("Update failed: no rows affected");
+            }
+          })
+          .onFailure(e -> {
+            log.error("{}\n\n{}\n\n{}\n", e.getMessage(), sql, updateJson.encodePrettily());
+          });
     });
-
   }
 
-  public static Future<Object> updateBySql(String sqlTemplate, JsonObject json) {
+  public static Future<Integer> updateBySql(String sqlTemplate, JsonObject json) {
     return updateBySql(sqlTemplate, json, 0);
   }
 
-  public static Future<Object> updateByFile(String sqlFileName, JsonObject json, int dbIdx) {
+  public static Future<Integer> updateByFile(String sqlFileName, JsonObject json, int dbIdx) {
     return VertxApp.fs.readFile("sqlTemplate/" + sqlFileName + ".sql")
         .onFailure(ar -> {
           log.error("{}", ar.getCause());
@@ -278,46 +223,35 @@ public class DB {
         });
   }
 
-  public static Future<Object> updateByFile(String sqlFileName, JsonObject json) {
+  public static Future<Integer> updateByFile(String sqlFileName, JsonObject json) {
     return updateByFile(sqlFileName, json, 0);
   }
 
-  public static Future<Object> deleteBySql(String sqlTemplate, JsonObject json, int dbIdx) {
+  public static Future<Integer> deleteBySql(String sqlTemplate, JsonObject json, int dbIdx) {
     return validate(sqlTemplate, json).compose(valid -> {
-      Connection conn = null;
-      String sql = null;
-      try {
-        conn = pools[dbIdx].getConnection();
-        sql = replacePlaceholder(sqlTemplate, json);
-        Statement stmt = conn.createStatement();
-        int rs = stmt.executeUpdate(sql);
-        conn.close();
-
-        log.trace("{}\n\n{}\n", sql, rs);
-        if (rs == 0) {
-          return Future.failedFuture("Delete failed, no rows affected");
-        }
-        return Future.succeededFuture(rs);
-      } catch (Exception e) {
-        log.error("{}\n{}\n{}\n", e.getMessage(), sql, json.encodePrettily());
-        if (conn != null) {
-          try {
-            conn.close();
-          } catch (SQLException e1) {
-            log.error("Failed to close connection: {}", e1.getCause());
-          }
-        }
-        return Future.failedFuture("Run SQL error");
-      }
+      String sql = replacePlaceholder(sqlTemplate, json);
+      return pools[dbIdx].query(sql)
+          .execute()
+          .compose(rowSet -> {
+            Integer affected = rowSet.rowCount();
+            if (affected > 0) {
+              return Future.succeededFuture(affected);
+            } else {
+              return Future.failedFuture("Delete failed: no rows affected");
+            }
+          })
+          .onFailure(e -> {
+            log.error("{}\n\n{}\n\n{}\n", e.getMessage(), sql, json.encodePrettily());
+          });
     });
 
   }
 
-  public static Future<Object> deleteBySql(String sqlTemplate, JsonObject json) {
+  public static Future<Integer> deleteBySql(String sqlTemplate, JsonObject json) {
     return deleteBySql(sqlTemplate, json, 0);
   }
 
-  public static Future<Object> deleteByFile(String sqlFileName, JsonObject json, int dbIdx) {
+  public static Future<Integer> deleteByFile(String sqlFileName, JsonObject json, int dbIdx) {
     return VertxApp.fs.readFile("sqlTemplate/" + sqlFileName + ".sql")
         .onFailure(ar -> {
           log.error("{}", ar.getCause());
@@ -327,7 +261,7 @@ public class DB {
         });
   }
 
-  public static Future<Object> deleteByFile(String sqlFileName, JsonObject json) {
+  public static Future<Integer> deleteByFile(String sqlFileName, JsonObject json) {
     return deleteByFile(sqlFileName, json, 0);
   }
 

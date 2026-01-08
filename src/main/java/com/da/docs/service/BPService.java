@@ -46,11 +46,11 @@ public class BPService {
         });
   }
 
-  public Future<Object> addBP(JsonObject obj) {
+  public Future<Integer> addBP(JsonObject obj) {
     return DB.insertByFile("insertBP", obj);
   }
 
-  public Future<Object> updateBP(JsonObject obj) {
+  public Future<Integer> updateBP(JsonObject obj) {
     return DB.updateByFile("updateBP", obj);
   }
 

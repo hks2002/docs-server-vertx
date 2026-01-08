@@ -27,7 +27,7 @@ import lombok.extern.log4j.Log4j2;
 
 @Log4j2
 public class DocsService {
-  public Future<Object> addDocs(JsonObject obj) {
+  public Future<Integer> addDocs(JsonObject obj) {
     return DB.insertByFile("insertDocs", obj)
         .onFailure(err -> {
           log.error("[File] Add doc failed: {}\n{}", obj.encodePrettily(), err.getMessage());
@@ -45,7 +45,7 @@ public class DocsService {
         });
   }
 
-  public Future<Object> modifyDocs(JsonObject obj) {
+  public Future<Integer> modifyDocs(JsonObject obj) {
     return DB.updateByFile("updateDocs", obj)
         .onFailure(err -> {
           log.error("[File] Modify doc failed: {}\n{}", obj.encodePrettily(), err.getMessage());
@@ -63,7 +63,7 @@ public class DocsService {
         });
   }
 
-  public Future<Object> removeDocs(JsonObject obj) {
+  public Future<Integer> removeDocs(JsonObject obj) {
     return DB.deleteByFile("deleteDocs", obj)
         .onFailure(err -> {
           log.error("[File] Delete doc from Database failed: {}\n{}", err.getMessage(), obj.encodePrettily());
@@ -80,7 +80,7 @@ public class DocsService {
         });
   }
 
-  public Future<Object> removeDBDuplicateDocsByName() {
+  public Future<Integer> removeDBDuplicateDocsByName() {
     return DB.deleteByFile("deleteDuplicateDocsByName", new JsonObject())
         .onFailure(err -> {
           log.error("[File] Delete duplicate doc by name from Database failed: {}", err.getMessage());
@@ -102,7 +102,7 @@ public class DocsService {
    * @param docModifiedAt
    * @return
    */
-  public Future<Object> addDocs(
+  public Future<Integer> addDocs(
       String fileName,
       long size,
       String location,
@@ -127,15 +127,24 @@ public class DocsService {
             JsonObject oldDocs = fileList.get(0);
             oldDocs.put("location", location);
             oldDocs.put("md5", md5);
-
+            oldDocs.put("size", size);
+            oldDocs.put("dms_id", dms_id);
+            oldDocs.put("doc_create_at", docCreateAt);
+            oldDocs.put("doc_modified_at", docModifiedAt);
             return modifyDocs(oldDocs);
           } else {
-            List<Future<Object>> f1 = new ArrayList<>();
+            List<Future<Integer>> f1 = new ArrayList<>();
 
             for (int i = 0; i < fileList.size(); i++) {
               JsonObject oldDocs = fileList.get(i);
               if (i == 0) {
                 oldDocs.put("location", location);
+                oldDocs.put("location", location);
+                oldDocs.put("md5", md5);
+                oldDocs.put("size", size);
+                oldDocs.put("dms_id", dms_id);
+                oldDocs.put("doc_create_at", docCreateAt);
+                oldDocs.put("doc_modified_at", docModifiedAt);
                 f1.add(modifyDocs(oldDocs));
               } else {
                 f1.add(removeDocs(oldDocs));
@@ -225,7 +234,7 @@ public class DocsService {
    *       and remove "TDS", "OMSD", "GIM" ... from file name
    * @Note The file must already exist in the file system
    */
-  public Future<Object> addFileInfo(String fileName, String id) {
+  public Future<Integer> addFileInfo(String fileName, String id) {
     try {
       // get the destination folder
       String toSubFolder = FSUtils.getFolderPathByFileName(fileName);

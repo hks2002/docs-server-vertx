@@ -39,7 +39,7 @@ public class UserService {
     this.adminPassword = adminPassword;
   }
 
-  public Future<Object> addUser(JsonObject obj) {
+  public Future<Integer> addUser(JsonObject obj) {
     return DB.insertByFile("insertUser", obj);
   }
 
@@ -55,8 +55,8 @@ public class UserService {
         .compose(ar -> {
           LogService.addLog("USER_INIT_SUCCESS", ip, userName, fullName);
           // init user's access
-          Future<Object> f11 = userFuncService.addUserFunc(userName, "DOCS_READ", defaultAccess.getBoolean("read"));
-          Future<Object> f12 = userFuncService.addUserFunc(userName, "DOCS_WRITE", defaultAccess.getBoolean("write"));
+          Future<Integer> f11 = userFuncService.addUserFunc(userName, "DOCS_READ", defaultAccess.getBoolean("read"));
+          Future<Integer> f12 = userFuncService.addUserFunc(userName, "DOCS_WRITE", defaultAccess.getBoolean("write"));
 
           return Future.all(f11, f12)
               .onFailure(err -> {
@@ -69,7 +69,7 @@ public class UserService {
         });
   }
 
-  public Future<Object> modifyUser(JsonObject obj, String ip) {
+  public Future<Integer> modifyUser(JsonObject obj, String ip) {
     return DB.updateByFile("updateUser", obj).onSuccess(ar -> {
       LogService.addLog("USER_UPDATE_SUCCESS", ip, obj.getString("login_name"), obj.getString("full_name"));
     }).onFailure(err -> {
@@ -172,9 +172,10 @@ public class UserService {
                           return setUserPermission(user, ip);
                         });
                   } else if (userSearched.size() == 1) {
-                    if (userSearched.get(0).getString("first_name").equals(useInfo.getString("first_name")) ||
-                        userSearched.get(0).getString("last_name").equals(useInfo.getString("last_name")) ||
-                        userSearched.get(0).getString("last_name").equals(useInfo.getString("last_name"))) {
+                    if (userSearched.get(0).getString("first_name") == null ||
+                        userSearched.get(0).getString("last_name") == null ||
+                        userSearched.get(0).getString("email") == null) {
+                      useInfo.put("id", userSearched.get(0).getString("id"));
                       modifyUser(useInfo, ip);
                     }
                     return setUserPermission(user, ip);

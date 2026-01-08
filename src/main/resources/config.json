@@ -9,9 +9,9 @@
     "sessionTimeout": 3600000
   },
   "docs": {
-    "docsRoot":{
+    "docsRoot": {
       "windows": "Y:/Drawing",
-      "linux":"/mnt/docs"
+      "linux": "/mnt/docs"
     },
     "waterMark": {
       "enable": true,
@@ -58,23 +58,39 @@
     "searchBase": "OU=User,DC=docs,DC=com"
   },
   "mysql": {
-    "jdbcUrl": "jdbc:mysql://localhost/docs",
+    "host": "localhost",
+    "port": 3306,
+    "database": "docs",
     "user": "docs",
     "password": "password",
-    "poolOptions": {
-      "maximumPoolSize": 4,
-      "minimumIdle": 1,
-      "idleTimeout": 18000
-    }
+    "ssl": false
+  },
+  "mysqlPoolOptions": {
+    "maxSize": 5,
+    "maxWaitQueueSize": -1,
+    "idleTimeout": 0,
+    "maxLifetime": 0,
+    "poolCleanerPeriod": 1000,
+    "connectionTimeout": 30,
+    "shared": false,
+    "eventLoopSize": 0
   },
   "mssql": {
-    "jdbcUrl": "jdbc:sqlserver://127.0.0.1\\sage;DatabaseName=sage;TrustServerCertificate=true;",
-    "user": "docs",
-    "password": "password",
-    "poolOptions": {
-      "maximumPoolSize": 4,
-      "minimumIdle": 1,
-      "idleTimeout": 18000
-    }
+    "host": "localhost",
+    "port": 1143,
+    "user": "USER",
+    "password": "PASSWORD",
+    "database": "DB",
+    "ssl": false
+  },
+  "mssqlPoolOptions": {
+    "maxSize": 5,
+    "maxWaitQueueSize": -1,
+    "idleTimeout": 0,
+    "maxLifetime": 0,
+    "poolCleanerPeriod": 1000,
+    "connectionTimeout": 30,
+    "shared": false,
+    "eventLoopSize": 0
   }
 }

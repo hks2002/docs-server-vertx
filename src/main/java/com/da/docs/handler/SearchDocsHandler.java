@@ -10,11 +10,14 @@ package com.da.docs.handler;
 
 import java.util.Optional;
 
+import com.da.docs.VertxApp;
 import com.da.docs.annotation.GetMapping;
 import com.da.docs.service.DocsService;
+import com.da.docs.utils.FSUtils;
 import com.da.docs.utils.Response;
 
 import io.vertx.core.Handler;
+import io.vertx.core.file.FileProps;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
@@ -58,13 +61,32 @@ public class SearchDocsHandler implements Handler<RoutingContext> {
         .onSuccess(list -> {
           JsonArray json = new JsonArray();
 
-          for (JsonObject s : list) {
-            JsonObject o = new JsonObject();
-            o.put("name", s.getString("file_name"));
-            o.put("size", s.getInteger("size"));
-            o.put("lastModified", s.getString("doc_modified_at"));
-            o.put("url", "/docs-api/docs/" + s.getString("location"));
-            json.add(o);
+          for (JsonObject f : list) {
+
+            // now checking and modifying the doc info
+            // get the destination folder
+            String toSubFolder = FSUtils.getFolderPathByFileName(f.getString("file_name"));
+            String toFolderFullPath = FSUtils.getDocsRoot() + '/' + toSubFolder;
+            String toFileFullPath = toFolderFullPath + '/' + f.getString("file_name");
+
+            if (FSUtils.isFileExists(toFileFullPath)) {
+              // make sure the info is correct based on the file, not the database, database
+              // may be wrong
+              FileProps props = VertxApp.fs.propsBlocking(toFileFullPath);
+              JsonObject o = new JsonObject();
+              o.put("name", f.getString("file_name"));
+              o.put("size", props.size());
+              o.put("lastModified", props.lastModifiedTime());
+              o.put("url", "/docs-api/docs/" + toSubFolder + '/' + f.getString("file_name"));
+
+              json.add(o);
+
+              // for updating the doc info
+              f.put("size", props.size());
+              f.put("lastModified", props.lastModifiedTime());
+              docsService.modifyDocs(f);
+            }
+
           }
           response.putHeader(HttpHeaders.CONTENT_TYPE, "application/json").end(json.encode());
         })

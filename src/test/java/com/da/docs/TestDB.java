@@ -8,22 +8,24 @@
 
 package com.da.docs;
 
-import java.sql.Connection;
-import java.sql.Statement;
-import java.util.List;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import com.da.docs.utils.ConfigUtils;
-import com.da.docs.utils.ResultSetUtils;
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
 
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.net.ClientSSLOptions;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
+import io.vertx.mssqlclient.MSSQLBuilder;
+import io.vertx.mssqlclient.MSSQLConnectOptions;
+import io.vertx.mysqlclient.MySQLBuilder;
+import io.vertx.mysqlclient.MySQLConnectOptions;
+import io.vertx.sqlclient.Pool;
+import io.vertx.sqlclient.PoolOptions;
+import io.vertx.sqlclient.Row;
+import io.vertx.sqlclient.RowSet;
 import lombok.extern.log4j.Log4j2;
 
 @Log4j2
@@ -32,29 +34,67 @@ public class TestDB {
 
   @Test
   public void testDB(Vertx vertx, VertxTestContext testContext) throws Throwable {
-    JsonObject mysqlConfig = ConfigUtils.getConfig("config-dev.json").getJsonObject("mysql");
+    JsonObject config = ConfigUtils.getConfig("config-dev.json").getJsonObject("mysql");
+    log.info(config);
+    MySQLConnectOptions options = new MySQLConnectOptions(config);
+    PoolOptions poolOptions = new PoolOptions().setMaxSize(1);
 
-    HikariConfig config = new HikariConfig();
-    config.setJdbcUrl(mysqlConfig.getString("jdbcUrl"));
-    config.setUsername(mysqlConfig.getString("user"));
-    config.setPassword(mysqlConfig.getString("password"));
-    config.setMinimumIdle(2);
+    Pool client = MySQLBuilder.pool()
+        .with(poolOptions)
+        .connectingTo(options)
+        .build();
 
-    HikariDataSource ds = new HikariDataSource(config);
-    try {
-      Connection conn = ds.getConnection();
-      String sql = "SELECT * from docs LIMIT 10";
-      Statement stmt = conn.createStatement();
-      var rs = stmt.executeQuery(sql);
-      List<JsonObject> list = ResultSetUtils.toList(rs);
-      log.info("{}", list.toString());
+    // A simple query
+    client
+        .query("SELECT * from docs LIMIT 10")
+        .execute()
+        .onSuccess(result -> {
+          RowSet<Row> rowSet = result;
+          for (Row row : rowSet) {
+            System.out.println(row.toJson());
+          }
+        })
+        .onComplete(ar -> {
 
-      conn.close();
-      ds.close();
-    } catch (Exception e) {
-      log.error("{}", e.getMessage());
-    }
-    testContext.completeNow();
+          // Now close the pool
+          client.close();
+
+          testContext.completeNow();
+        });
+
+  }
+
+  @Test
+  public void testDB2(Vertx vertx, VertxTestContext testContext) throws Throwable {
+    JsonObject config = ConfigUtils.getConfig("config-dev.json").getJsonObject("mssql");
+    log.info(config);
+
+    MSSQLConnectOptions options = new MSSQLConnectOptions(config)
+        .setSslOptions(new ClientSSLOptions().setTrustAll(true));
+    PoolOptions poolOptions = new PoolOptions().setMaxSize(1);
+
+    Pool client = MSSQLBuilder.pool()
+        .with(poolOptions)
+        .connectingTo(options)
+        .build();
+
+    // A simple query
+    client
+        .query("SELECT TOP 10 * FROM SORDER")
+        .execute()
+        .onSuccess(result -> {
+          RowSet<Row> rowSet = result;
+          for (Row row : rowSet) {
+            System.out.println(row.toJson());
+          }
+        })
+        .onComplete(ar -> {
+
+          // Now close the pool
+          client.close();
+
+          testContext.completeNow();
+        });
 
   }
 

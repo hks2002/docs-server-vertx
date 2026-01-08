@@ -6,7 +6,6 @@
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
-
 package com.da.docs.service;
 
 import java.util.List;
@@ -20,11 +19,11 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 public class FuncService {
 
-  public Future<Object> addFunc(JsonObject obj) {
+  public Future<Integer> addFunc(JsonObject obj) {
     return DB.insertByFile("insertFunc", obj);
   }
 
-  public Future<Object> modifyFunc(JsonObject obj) {
+  public Future<Integer> modifyFunc(JsonObject obj) {
     return DB.updateByFile("updateFunc", obj);
   }
 

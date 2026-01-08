@@ -6,7 +6,6 @@
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
-
 package com.da.docs.service;
 
 import java.util.List;
@@ -20,11 +19,11 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 public class UserFuncService {
 
-  public Future<Object> addUserFunc(JsonObject obj) {
+  public Future<Integer> addUserFunc(JsonObject obj) {
     return DB.insertByFile("insertUserFunc", obj);
   }
 
-  public Future<Object> addUserFunc(String login_name, String func_code, boolean enable) {
+  public Future<Integer> addUserFunc(String login_name, String func_code, boolean enable) {
     UserService userService = new UserService();
     FuncService funcService = new FuncService();
     Future<List<JsonObject>> f1 = userService.searchUserByLoginName(JsonObject.of("login_name", login_name));
@@ -46,11 +45,11 @@ public class UserFuncService {
 
   }
 
-  public Future<Object> modifyUserFunc(JsonObject obj) {
+  public Future<Integer> modifyUserFunc(JsonObject obj) {
     return DB.updateByFile("updateUserFunc", obj);
   }
 
-  public Future<Object> modifyUserFunc(String login_name, String func_code, boolean enable) {
+  public Future<Integer> modifyUserFunc(String login_name, String func_code, boolean enable) {
     UserService userService = new UserService();
     FuncService funcService = new FuncService();
     Future<List<JsonObject>> f1 = userService.searchUserByLoginName(JsonObject.of("login_name", login_name));
