@@ -6,7 +6,6 @@
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
-
 package com.da.docs;
 
 import java.util.Arrays;
@@ -161,5 +160,18 @@ public class TestFuture {
         // Handle failure
       }
     });
+  }
+
+  @Test
+  public void testFuture9() {
+    f1(true).compose(a -> {
+      log.info("Compose: {}", a);
+      return f2(true).onSuccess(a2 -> {
+        log.info("Success: {}", a2);
+      });
+    }).andThen(a -> {
+      log.info("AndThen: {}", a);
+    });
+
   }
 }

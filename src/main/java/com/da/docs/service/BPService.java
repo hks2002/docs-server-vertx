@@ -6,7 +6,6 @@
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
-
 package com.da.docs.service;
 
 import java.util.List;
@@ -21,7 +20,38 @@ import lombok.extern.log4j.Log4j2;
 public class BPService {
 
   public Future<List<JsonObject>> searchBPByCode(JsonObject obj) {
-    return DB.queryByFile("queryBPByCode", obj, 1);
+    return DB.queryByFile("queryBPByCode0", obj, 0)
+        .compose(bpList -> {
+          // get from sage and then add to docs db
+          if (bpList.size() == 0) {
+            return DB.queryByFile("queryBPByCode", obj, 1)
+                .onSuccess(ar -> {
+                  if (ar.size() == 1) {
+                    addBP(ar.get(0));
+                  }
+                });
+            // return from docs db, then get from sage and then update to docs db
+          } else if (bpList.size() == 1) {
+            return Future.succeededFuture(bpList).andThen(a -> {
+              DB.queryByFile("queryBPByCode", obj, 1)
+                  .onSuccess(ar -> {
+                    if (ar.size() == 1) {
+                      updateBP(ar.get(0).put("id", bpList.get(0).getString("id")));
+                    }
+                  });
+            });
+          } else {
+            return Future.failedFuture("More than one BP found");
+          }
+        });
+  }
+
+  public Future<Object> addBP(JsonObject obj) {
+    return DB.insertByFile("insertBP", obj);
+  }
+
+  public Future<Object> updateBP(JsonObject obj) {
+    return DB.updateByFile("updateBP", obj);
   }
 
 }
