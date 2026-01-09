@@ -21,9 +21,7 @@ import com.da.docs.VertxApp;
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.ClientSSLOptions;
-import io.vertx.mssqlclient.MSSQLBuilder;
 import io.vertx.mssqlclient.MSSQLConnectOptions;
-import io.vertx.mysqlclient.MySQLBuilder;
 import io.vertx.mysqlclient.MySQLConnectOptions;
 import io.vertx.sqlclient.Pool;
 import io.vertx.sqlclient.PoolOptions;
@@ -44,19 +42,14 @@ public class DB {
     MySQLConnectOptions mysqlOptions = new MySQLConnectOptions(VertxApp.appConfig.getJsonObject("mysql"));
     MSSQLConnectOptions mssqlOptions = new MSSQLConnectOptions(VertxApp.appConfig.getJsonObject("mssql"));
     ClientSSLOptions sslOptions = new ClientSSLOptions().setTrustAll(true);
+    mysqlOptions.setSslOptions(sslOptions);
     mssqlOptions.setSslOptions(sslOptions);
 
     PoolOptions mysqlPoolOptions = new PoolOptions(VertxApp.appConfig.getJsonObject("mysqlPoolOptions"));
     PoolOptions mssqlPoolOptions = new PoolOptions(VertxApp.appConfig.getJsonObject("mssqlPoolOptions"));
 
-    Pool mysqlClient = MySQLBuilder.pool()
-        .with(mysqlPoolOptions)
-        .connectingTo(mysqlOptions)
-        .build();
-    Pool mssqlClient = MSSQLBuilder.pool()
-        .with(mssqlPoolOptions)
-        .connectingTo(mssqlOptions)
-        .build();
+    Pool mysqlClient = Pool.pool(VertxApp.vertx, mysqlOptions, mysqlPoolOptions);
+    Pool mssqlClient = Pool.pool(VertxApp.vertx, mssqlOptions, mssqlPoolOptions);
 
     DB.pools[0] = mysqlClient;
     DB.pools[1] = mssqlClient;

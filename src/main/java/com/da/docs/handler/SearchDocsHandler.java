@@ -8,16 +8,12 @@
 
 package com.da.docs.handler;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 
 import com.da.docs.annotation.GetMapping;
 import com.da.docs.service.DocsService;
-import com.da.docs.utils.FSUtils;
 import com.da.docs.utils.Response;
 
-import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerRequest;
@@ -60,59 +56,21 @@ public class SearchDocsHandler implements Handler<RoutingContext> {
 
     docsService.searchDocsByName(JsonObject.of("file_name", "%" + PN + "%"))
         .onSuccess(list -> {
-          List<Future<JsonObject>> futures = new ArrayList<>();
+          JsonArray json = new JsonArray();
 
-          for (JsonObject f : list) {
-            String fileName = f.getString("file_name");
-
-            Future<JsonObject> futureDoc = FSUtils.getFolderPathByFileName(fileName).compose(toSubFolder -> {
-              return FSUtils.getDocsRoot().compose(toFolderFullPath -> {
-                String toFileFullPath = toFolderFullPath + '/' + fileName;
-
-                return FSUtils.isFileExists(toFileFullPath).compose(fileExists -> {
-                  if (fileExists) {
-                    return FSUtils.fs.props(toFileFullPath).compose(props -> {
-                      // make sure the info is correct based on the file,
-                      // not the database,database may be wrong
-                      JsonObject o = new JsonObject();
-                      o.put("name", fileName);
-                      o.put("size", props.size());
-                      o.put("lastModified", props.lastModifiedTime());
-                      o.put("url", "/docs-api/docs/" + toSubFolder + '/' + fileName);
-
-                      // for updating the doc info
-                      f.put("size", props.size());
-                      f.put("lastModified", props.lastModifiedTime());
-                      docsService.modifyDocs(f);
-
-                      return Future.succeededFuture(o);
-                    });
-                  }
-                  return Future.failedFuture("File not found");
-
-                });
-              });
-            });
-
-            futures.add(futureDoc);
+          for (JsonObject s : list) {
+            JsonObject o = new JsonObject();
+            o.put("name", s.getString("file_name"));
+            o.put("size", s.getInteger("size"));
+            o.put("lastModified", s.getString("doc_modified_at"));
+            o.put("url", "/docs-api/docs/" + s.getString("location"));
+            json.add(o);
           }
-
-          Future.join(futures).onSuccess(data -> {
-            JsonArray json = new JsonArray();
-
-            for (int i = 0; i < data.size(); ++i) {
-              if (data.succeeded(i)) {
-                json.add(data.resultAt(i));
-              }
-            }
-            response.putHeader(HttpHeaders.CONTENT_TYPE, "application/json").end(json.encode());
-          });
-
+          response.putHeader(HttpHeaders.CONTENT_TYPE, "application/json").end(json.encode());
         })
         .onFailure(ar -> {
           log.error("{}", ar.getMessage());
           Response.internalError(context);
         });
-
   }
 }
