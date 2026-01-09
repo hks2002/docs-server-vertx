@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.8.0](https://github.com/hks2002/docs-server-vertx/compare/v1.7.0...v1.8.0) (2026-01-09)
+
+
+### Features
+
+* ✨ all function to Future ([751d6c5](https://github.com/hks2002/docs-server-vertx/commit/751d6c5531dcea1aac72fdcc4538e0c06adc7e1b))
+* ✨add update user info if it's different ([437db6b](https://github.com/hks2002/docs-server-vertx/commit/437db6b4244a532acb1e7dcdbfadbc2df918a142))
+* ✨auto update bp info from sage to docs ([8108f35](https://github.com/hks2002/docs-server-vertx/commit/8108f3507473f35f749e5f22182791a58eaceeef))
+* ✨DB using vertx build in, discard hikariCP ([d778e40](https://github.com/hks2002/docs-server-vertx/commit/d778e404de6feedc2a0b00dbcc1b385079907ede))
+
 ## [1.7.0](https://github.com/hks2002/docs-server-vertx/compare/v1.6.0...v1.7.0) (2026-01-07)
 
 
