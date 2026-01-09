@@ -32,14 +32,15 @@ public class BPService {
                 });
             // return from docs db, then get from sage and then update to docs db
           } else if (bpList.size() == 1) {
-            return Future.succeededFuture(bpList).andThen(a -> {
-              DB.queryByFile("queryBPByCode", obj, 1)
-                  .onSuccess(ar -> {
-                    if (ar.size() == 1) {
-                      updateBP(ar.get(0).put("id", bpList.get(0).getString("id")));
-                    }
-                  });
-            });
+            return Future.succeededFuture(bpList)
+                .andThen(a -> {
+                  DB.queryByFile("queryBPByCode", obj, 1)
+                      .onSuccess(ar -> {
+                        if (ar.size() == 1) {
+                          updateBP(ar.get(0).put("id", bpList.get(0).getString("id")));
+                        }
+                      });
+                });
           } else {
             return Future.failedFuture("More than one BP found");
           }

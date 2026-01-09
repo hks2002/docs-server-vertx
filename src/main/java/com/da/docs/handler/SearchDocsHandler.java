@@ -8,16 +8,17 @@
 
 package com.da.docs.handler;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
-import com.da.docs.VertxApp;
 import com.da.docs.annotation.GetMapping;
 import com.da.docs.service.DocsService;
 import com.da.docs.utils.FSUtils;
 import com.da.docs.utils.Response;
 
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.file.FileProps;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
@@ -59,36 +60,54 @@ public class SearchDocsHandler implements Handler<RoutingContext> {
 
     docsService.searchDocsByName(JsonObject.of("file_name", "%" + PN + "%"))
         .onSuccess(list -> {
-          JsonArray json = new JsonArray();
+          List<Future<JsonObject>> futures = new ArrayList<>();
 
           for (JsonObject f : list) {
+            String fileName = f.getString("file_name");
 
-            // now checking and modifying the doc info
-            // get the destination folder
-            String toSubFolder = FSUtils.getFolderPathByFileName(f.getString("file_name"));
-            String toFolderFullPath = FSUtils.getDocsRoot() + '/' + toSubFolder;
-            String toFileFullPath = toFolderFullPath + '/' + f.getString("file_name");
+            Future<JsonObject> futureDoc = FSUtils.getFolderPathByFileName(fileName).compose(toSubFolder -> {
+              return FSUtils.getDocsRoot().compose(toFolderFullPath -> {
+                String toFileFullPath = toFolderFullPath + '/' + fileName;
 
-            if (FSUtils.isFileExists(toFileFullPath)) {
-              // make sure the info is correct based on the file, not the database, database
-              // may be wrong
-              FileProps props = VertxApp.fs.propsBlocking(toFileFullPath);
-              JsonObject o = new JsonObject();
-              o.put("name", f.getString("file_name"));
-              o.put("size", props.size());
-              o.put("lastModified", props.lastModifiedTime());
-              o.put("url", "/docs-api/docs/" + toSubFolder + '/' + f.getString("file_name"));
+                return FSUtils.isFileExists(toFileFullPath).compose(fileExists -> {
+                  if (fileExists) {
+                    return FSUtils.fs.props(toFileFullPath).compose(props -> {
+                      // make sure the info is correct based on the file,
+                      // not the database,database may be wrong
+                      JsonObject o = new JsonObject();
+                      o.put("name", fileName);
+                      o.put("size", props.size());
+                      o.put("lastModified", props.lastModifiedTime());
+                      o.put("url", "/docs-api/docs/" + toSubFolder + '/' + fileName);
 
-              json.add(o);
+                      // for updating the doc info
+                      f.put("size", props.size());
+                      f.put("lastModified", props.lastModifiedTime());
+                      docsService.modifyDocs(f);
 
-              // for updating the doc info
-              f.put("size", props.size());
-              f.put("lastModified", props.lastModifiedTime());
-              docsService.modifyDocs(f);
-            }
+                      return Future.succeededFuture(o);
+                    });
+                  }
+                  return Future.failedFuture("File not found");
 
+                });
+              });
+            });
+
+            futures.add(futureDoc);
           }
-          response.putHeader(HttpHeaders.CONTENT_TYPE, "application/json").end(json.encode());
+
+          Future.join(futures).onSuccess(data -> {
+            JsonArray json = new JsonArray();
+
+            for (int i = 0; i < data.size(); ++i) {
+              if (data.succeeded(i)) {
+                json.add(data.resultAt(i));
+              }
+            }
+            response.putHeader(HttpHeaders.CONTENT_TYPE, "application/json").end(json.encode());
+          });
+
         })
         .onFailure(ar -> {
           log.error("{}", ar.getMessage());

@@ -36,7 +36,7 @@ public class TestDMS {
     String dmsServer = ConfigUtils.getConfig("config-dev.json").getString("dmsServer");
     String dmsServerFast = ConfigUtils.getConfig("config-dev.json").getString("dmsServerFast");
 
-    FSUtils.setup("c:/docs", 3, 3, vertx.fileSystem());
+    FSUtils.setup("c:/docs", 3, 3, vertx);
     DMSServices.setup(dmsServer, dmsServerFast, vertx.fileSystem());
 
     DMSServices.getDocuments("RRT130806")

@@ -49,24 +49,6 @@ public class DMSServices {
   private static String dmsServerFast = VertxApp.appConfig == null ? "" : VertxApp.appConfig.getString("dmsServerFast");
   private static FileSystem fs = VertxApp.fs == null ? Vertx.vertx().fileSystem() : VertxApp.fs;
 
-  private String userName = "";
-
-  public DMSServices() {
-    log.warn("Creating DMSServices without userName, message can't send");
-  }
-
-  public DMSServices(String userName) {
-    this.userName = userName;
-  }
-
-  public String getUserName() {
-    return this.userName;
-  }
-
-  public void setUserName(String userName) {
-    this.userName = userName;
-  }
-
   public static void setup(String server, String serverFast, FileSystem fileSystem) {
     dmsServer = server;
     dmsServerFast = serverFast;
@@ -395,27 +377,38 @@ public class DMSServices {
   /**
    * Check before download documents from DMS system
    *
-   * @param fileName   the file name
-   * @param modifiedAt the modified date
+   * @param fileName            the file name
+   * @param modifiedAtToCompare the modified date
    * @return SKIP or START
    */
-  public static Future<String> downloadDmsDocsCheck(String fileName, Long modifiedAt) {
-    // get the destination folder
-    String toSubFolder = FSUtils.getFolderPathByFileName(fileName);
-    String toFolderFullPath = FSUtils.getDocsRoot() + '/' + toSubFolder;
-    String toFileFullPath = toFolderFullPath + '/' + fileName;
+  public static Future<String> downloadDmsDocsCheck(String fileName, Long modifiedAtToCompare) {
+    return Future.all(FSUtils.getFolderPathByFileName(fileName), FSUtils.getDocsRoot()).compose(data -> {
+      String toSubFolder = data.resultAt(0);
+      String docRoot = data.resultAt(1);
+      String toFolderFullPath = docRoot + '/' + toSubFolder;
+      String toFileFullPath = toFolderFullPath + '/' + fileName;
 
-    if (FSUtils.isFileExists(toFileFullPath)) {
-      if (FSUtils.getFileModifiedTime(toFileFullPath) >= modifiedAt) {
-        log.debug("[Dms][DOWNLOAD] {} exists and is up-to-date, skip download", fileName);
-        return Future.succeededFuture("SKIP");
-      } else {
-        fs.deleteBlocking(toFileFullPath);
-        log.info("[Dms][DOWNLOAD] {} exists and is outdated, re-downloading", fileName);
-        return Future.succeededFuture("REDOWNLOAD");
-      }
-    }
-    return Future.succeededFuture("START");
+      return FSUtils.isFileExists(toFileFullPath).compose(fileExists -> {
+        if (fileExists) {
+          return FSUtils.getFileModifiedTime(toFileFullPath)
+              .compose(modifiedTime -> {
+                if (modifiedTime >= modifiedAtToCompare) {
+                  log.debug("[Dms][DOWNLOAD] {} exists and is up-to-date, skip download", fileName);
+                  return Future.succeededFuture("SKIP");
+                } else {
+                  return fs.delete(toFileFullPath).compose(v -> {
+                    log.info("[Dms][DOWNLOAD] {} exists and is outdated, re-downloading", fileName);
+                    return Future.succeededFuture("REDOWNLOAD");
+                  });
+
+                }
+
+              });
+        } else {
+          return Future.succeededFuture("START");
+        }
+      });
+    });
   }
 
   /**

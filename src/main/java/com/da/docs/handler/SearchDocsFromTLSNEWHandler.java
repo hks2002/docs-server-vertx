@@ -63,57 +63,64 @@ public class SearchDocsFromTLSNEWHandler implements Handler<RoutingContext> {
           } else {
             response.end("[]");
           }
-        }).onFailure(err -> {
+        })
+        .onFailure(err -> {
           log.error("Search docs from TLSNEW failed: {}, {}", PN, err.getMessage());
           response.putHeader(HttpHeaders.CONTENT_TYPE, "application/json");
           response.end("[]");
         }).andThen(docs -> {
           for (int i = 0; i < docs.result().size(); i++) {
-            JsonObject doc = docs.result().getJsonObject(i);
-            String name = doc.getString("name");
-            String fileId = doc.getString("fileId");
-            Long lastModified = doc.getLong("lastModified");
+            final int index = i;
+            // ❗❗❗ to limit the number of documents to be downloaded
+            if (index >= 5) {
+              break;
+            }
 
-            DMSServices.downloadDmsDocsCheck(name, lastModified)
-                .compose(checkResult -> {
-                  switch (checkResult) {
-                    case "SKIP":
-                      MessageService.sendMessageToUser(userName, JsonObject.of(
-                          "msg", "DMS_DOWNLOAD_SKIP",
-                          "name", name).encode());
-                      break;
-                    case "START":
-                      MessageService.sendMessageToUser(userName, JsonObject.of(
-                          "msg", "DMS_DOWNLOAD_START",
-                          "name", name).encode());
-                      break;
-                    case "REDOWNLOAD":
-                      MessageService.sendMessageToUser(userName, JsonObject.of(
-                          "msg", "DMS_DOWNLOAD_REDOWNLOAD",
-                          "name", name).encode());
-                      break;
-                  }
-                  return Future.succeededFuture(checkResult);
-                }).andThen(checkResult -> {
-                  if (checkResult.result().equals("START") || checkResult.result().equals("REDOWNLOAD")) {
-                    DMSServices.downloadDmsDocs(name, fileId, lastModified)
-                        .onSuccess(res -> {
-                          switch (res) {
-                            case "DOWNLOADED":
-                              MessageService.sendMessageToUser(userName, JsonObject.of(
-                                  "msg", "DMS_DOWNLOAD_SUCCESS",
-                                  "name", name).encode());
-                              break;
-                          }
-                        })
-                        .onFailure(err -> {
-                          MessageService.sendMessageToUser(userName, JsonObject.of(
-                              "msg", "DMS_DOWNLOAD_FAILURE",
-                              "name", name).encode());
-                        });
-                  }
-                });
+            // do actions in background, not block the main thread
+            context.vertx().executeBlocking(() -> {
 
+              JsonObject doc = docs.result().getJsonObject(index);
+              String name = doc.getString("name");
+              String fileId = doc.getString("fileId");
+              Long lastModified = doc.getLong("lastModified");
+
+              JsonObject message = JsonObject.of("name", name);
+
+              DMSServices.downloadDmsDocsCheck(name, lastModified)
+                  .compose(checkResult -> {
+                    switch (checkResult) {
+                      case "SKIP":
+                        MessageService.sendMessageToUser(userName, message.put("msg", "DMS_DOWNLOAD_SKIP").encode());
+                        break;
+                      case "START":
+                        MessageService.sendMessageToUser(userName, message.put("msg", "DMS_DOWNLOAD_START").encode());
+                        break;
+                      case "REDOWNLOAD":
+                        MessageService.sendMessageToUser(userName,
+                            message.put("msg", "DMS_DOWNLOAD_REDOWNLOAD").encode());
+                        break;
+                    }
+                    return Future.succeededFuture(checkResult);
+                  }).andThen(checkResult -> {
+                    if (checkResult.result().equals("START") || checkResult.result().equals("REDOWNLOAD")) {
+                      DMSServices.downloadDmsDocs(name, fileId, lastModified)
+                          .onSuccess(res -> {
+                            switch (res) {
+                              case "DOWNLOADED":
+                                MessageService.sendMessageToUser(userName,
+                                    message.put("msg", "DMS_DOWNLOAD_SUCCESS").encode());
+                                break;
+                            }
+                          })
+                          .onFailure(err -> {
+                            MessageService.sendMessageToUser(userName,
+                                message.put("msg", "DMS_DOWNLOAD_FAILURE").encode());
+                          });
+                    }
+                  });
+
+              return Future.succeededFuture();
+            });
           }
         });
   }

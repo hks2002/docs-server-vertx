@@ -174,4 +174,20 @@ public class TestFuture {
     });
 
   }
+
+  @Test
+  public void testFuture() {
+    List<Future<String>> futureList = Arrays.asList(f1(true), f2(true), f1(true), f1(true), f1(true), f1(true),
+        f1(true));
+    Future.all(futureList).onComplete(ar -> {
+      if (ar.succeeded()) {
+        List<String> results = ar.result().list();
+        log.info("Results: {}", results);
+        // Handle the list of results here
+      } else {
+        // Handle failure
+      }
+    });
+
+  }
 }
