@@ -230,39 +230,40 @@ public class DocsService {
    */
   public Future<Integer> addFileInfo(String fileName, String id) {
 
-    return FSUtils.getFolderPathByFileName(fileName).compose(toSubFolder -> {
-      return FSUtils.getDocsRoot().compose(toFolderFullPath -> {
-        String toFileFullPath = toFolderFullPath + '/' + fileName;
+    return Future.all(FSUtils.getDocsRoot(), FSUtils.getFolderPathByFileName(fileName)).compose(d1 -> {
+      String docRoot = d1.resultAt(0);
+      String toSubFolder = d1.resultAt(1);
+      String toFileFullPath = docRoot + '/' + toSubFolder + '/' + fileName;
+      log.debug(" [File] Add file info: {}", toFileFullPath);
 
-        return FSUtils.isFileExists(toFileFullPath).compose(fileExists -> {
-          if (!fileExists) {
-            log.error("[File] Destination file is not a file: {}", toFileFullPath);
-            return null;
-          }
+      return FSUtils.isFileExists(toFileFullPath).compose(fileExists -> {
+        if (!fileExists) {
+          log.error("[File][Add] Destination file is not a file: {}", toFileFullPath);
+          return null;
+        }
 
-          return Future.all(
-              FSUtils.computerMd5(toFileFullPath),
-              FSUtils.fs.props(toFileFullPath))
-              .compose(data -> {
-                String md5 = data.resultAt(0);
-                FileProps props = data.resultAt(1);
+        return Future.all(
+            FSUtils.computerMd5(toFileFullPath),
+            FSUtils.fs.props(toFileFullPath))
+            .compose(data -> {
+              String md5 = data.resultAt(0);
+              FileProps props = data.resultAt(1);
 
-                long size = props.size();
-                long creationTime = props.creationTime();
-                long modifiedTime = props.lastModifiedTime();
-                LocalDateTime createAt = LocalDateTime.ofInstant(Instant.ofEpochMilli(creationTime),
-                    ZoneId.systemDefault());
-                LocalDateTime modifiedAt = LocalDateTime.ofInstant(Instant.ofEpochMilli(modifiedTime),
-                    ZoneId.systemDefault());
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-                String createAtStr = createAt.format(formatter);
-                String modifiedAtStr = modifiedAt.format(formatter);
+              long size = props.size();
+              long creationTime = props.creationTime();
+              long modifiedTime = props.lastModifiedTime();
+              LocalDateTime createAt = LocalDateTime.ofInstant(Instant.ofEpochMilli(creationTime),
+                  ZoneId.systemDefault());
+              LocalDateTime modifiedAt = LocalDateTime.ofInstant(Instant.ofEpochMilli(modifiedTime),
+                  ZoneId.systemDefault());
+              DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+              String createAtStr = createAt.format(formatter);
+              String modifiedAtStr = modifiedAt.format(formatter);
 
-                DocsService docsService = new DocsService();
-                return docsService.addDocs(fileName, size, toSubFolder, id, md5, createAtStr, modifiedAtStr);
-              });
+              DocsService docsService = new DocsService();
+              return docsService.addDocs(fileName, size, toSubFolder, id, md5, createAtStr, modifiedAtStr);
+            });
 
-        });
       });
     });
 
@@ -283,35 +284,37 @@ public class DocsService {
   public Future<Void> moveFile(String fromFileFullPath, String toFileName, String mode) {
     Future<Void> f1 = FSUtils.isFileExists(fromFileFullPath).compose(sourceFileExists -> {
       if (!sourceFileExists) {
-        log.error("[File] Source file is not a file: {}", fromFileFullPath);
+        log.error("[File][Move] Source file is not a file: {}", fromFileFullPath);
         return Future.failedFuture("Source file is not a file: " + fromFileFullPath);
       }
       ;
       return Future.succeededFuture();
     });
 
-    Future<String> f2 = FSUtils.getFolderPathByFileName(toFileName).compose(toSubFolder -> {
-      return FSUtils.getDocsRoot().compose(rootDir -> {
-        String toFolderFullPath = rootDir + '/' + toSubFolder;
+    Future<String> f2 = FSUtils.getDocsRoot();
+    Future<String> f3 = FSUtils.getFolderPathByFileName(toFileName);
 
-        return FSUtils.fs.exists(toFolderFullPath).compose(toFolderExists -> {
-          if (!toFolderExists) {
-            log.trace("[File] Make dir: {}", toFolderFullPath);
-            return FSUtils.fs.mkdirs(toFolderFullPath).compose(success -> {
-              return Future.succeededFuture(toFolderFullPath);
-            });
-          }
-          return Future.succeededFuture(toFolderFullPath);
-        });
+    Future<String> f4 = Future.all(f1, f2, f3).compose(data -> {
+      String rootDir = data.resultAt(1);
+      String toSubFolder = data.resultAt(2);
+      String toFolderFullPath = rootDir + '/' + toSubFolder;
+
+      return FSUtils.fs.exists(toFolderFullPath).compose(toFolderExists -> {
+        if (!toFolderExists) {
+          log.trace("[File] Make dir: {}", toFolderFullPath);
+          return FSUtils.fs.mkdirs(toFolderFullPath).compose(success -> {
+            return Future.succeededFuture(toFolderFullPath);
+          });
+        }
+        return Future.succeededFuture(toFolderFullPath);
       });
     });
 
-    return Future.all(f1, f2).compose(data -> {
-      String toFolderFullPath = data.resultAt(1);
+    return f4.compose(toFolderFullPath -> {
       String toFileFullPath = toFolderFullPath + '/' + toFileName;
       return FSUtils.isFileExists(toFileFullPath).compose(fileExists -> {
         if (fileExists) {
-          log.warn("[File] File already exists: {}", toFileFullPath);
+          log.warn("[File][Move] File already exists: {}", toFileFullPath);
         }
 
         return moveFileCore(fromFileFullPath, toFileFullPath, mode, fileExists);
