@@ -86,6 +86,7 @@ public class SearchDocsHandler implements Handler<RoutingContext> {
                         o.put("size", props.size());
                         o.put("lastModified", props.lastModifiedTime());
                         o.put("url", "/docs-api/docs/" + toFolderPath + '/' + fileName);
+                        o.put("fileId", f.getInteger("dms_id", 0));
 
                         // for updating the doc info
                         f.put("size", props.size());
