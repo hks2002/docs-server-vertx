@@ -6,7 +6,6 @@
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
-
 package com.da.docs.handler;
 
 import com.da.docs.annotation.PostMapping;
@@ -36,8 +35,7 @@ public class LogoutHandler implements Handler<RoutingContext> {
       HttpServerRequest request = context.request();
       String ip = CommonUtils.getTrueRemoteIp(request);
       String userName = u.principal().getString("login_name");
-      String fullName = u.principal().getString("full_name");
-      LogService.addLog("LOGOUT_SUCCESS", ip, userName, fullName);
+      LogService.addLog("LOGOUT_SUCCESS", ip, userName);
 
       switch (accept) {
         case "application/json":

@@ -50,20 +50,20 @@ public class UserService {
 
     return addUser(userInfo)
         .onFailure(err -> {
-          LogService.addLog("USER_INIT_FAILED", ip, userName, fullName);
+          LogService.addLog("USER_INIT_FAILED", ip, userName);
         })
         .compose(ar -> {
-          LogService.addLog("USER_INIT_SUCCESS", ip, userName, fullName);
+          LogService.addLog("USER_INIT_SUCCESS", ip, userName);
           // init user's access
           Future<Integer> f11 = userFuncService.addUserFunc(userName, "DOCS_READ", defaultAccess.getBoolean("read"));
           Future<Integer> f12 = userFuncService.addUserFunc(userName, "DOCS_WRITE", defaultAccess.getBoolean("write"));
 
           return Future.all(f11, f12)
               .onFailure(err -> {
-                LogService.addLog("DOC_ACCESS_INIT_FAILED", ip, userName, fullName);
+                LogService.addLog("DOC_ACCESS_INIT_FAILED", ip, userName);
               })
               .compose(ar2 -> {
-                LogService.addLog("DOC_ACCESS_INIT_SUCCESS", ip, userName, fullName);
+                LogService.addLog("DOC_ACCESS_INIT_SUCCESS", ip, userName);
                 return Future.succeededFuture(user);
               });
         });
@@ -71,9 +71,9 @@ public class UserService {
 
   public Future<Integer> modifyUser(JsonObject obj, String ip) {
     return DB.updateByFile("updateUser", obj).onSuccess(ar -> {
-      LogService.addLog("USER_UPDATE_SUCCESS", ip, obj.getString("login_name"), obj.getString("full_name"));
+      LogService.addLog("USER_UPDATE_SUCCESS", ip, obj.getString("login_name"));
     }).onFailure(err -> {
-      LogService.addLog("USER_UPDATE_FAILED", ip, obj.getString("login_name"), obj.getString("full_name"));
+      LogService.addLog("USER_UPDATE_FAILED", ip, obj.getString("login_name"));
     });
   }
 
@@ -99,10 +99,10 @@ public class UserService {
 
     return Future.all(f1, f2, f3)
         .onFailure(err -> {
-          LogService.addLog("DOC_ACCESS_SET_FAILED", ip, userName, fullName);
+          LogService.addLog("DOC_ACCESS_SET_FAILED", ip, userName);
         })
         .compose(data -> {
-          LogService.addLog("DOC_ACCESS_SET_SUCCESS", ip, userName, fullName);
+          LogService.addLog("DOC_ACCESS_SET_SUCCESS", ip, userName);
           List<JsonObject> d1 = data.resultAt(0);
           List<JsonObject> d2 = data.resultAt(1);
           List<JsonObject> d3 = data.resultAt(2);
@@ -159,8 +159,7 @@ public class UserService {
             LogService.addLog("LOGIN_FAILED", ip, userName);
           })
           .compose(useInfo -> {
-            String fullName = useInfo.getString("full_name");
-            LogService.addLog("LOGIN_SUCCESS", ip, userName, fullName);
+            LogService.addLog("LOGIN_SUCCESS", ip, userName);
 
             User user = User.create(useInfo);
 

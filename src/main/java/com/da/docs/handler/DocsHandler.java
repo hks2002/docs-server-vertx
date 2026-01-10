@@ -243,7 +243,7 @@ public class DocsHandler implements Handler<RoutingContext> {
     final String bpName = Optional.ofNullable((String) session.get("BP_NAME")).orElse("");
 
     // log it
-    LogService.addLog("DOC_ACCESS_SUCCESS", ip, loginName, fullName, fileName, bpCode, bpName);
+    LogService.addLog("DOC_ACCESS_SUCCESS", ip, loginName, "", fileName, bpCode);
 
     final String wmText = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) +
         (showCompany ? ' ' + companyName : "") +

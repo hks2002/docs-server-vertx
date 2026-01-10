@@ -9,6 +9,7 @@
 package com.da.docs.db;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -17,6 +18,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.da.docs.VertxApp;
+import com.da.docs.utils.FSUtils;
 
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
@@ -37,6 +39,7 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 public class DB {
   private static Pool[] pools = new Pool[2];
+  private static DateTimeFormatter fmt = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
   public static void initDB() {
     MySQLConnectOptions mysqlOptions = new MySQLConnectOptions(VertxApp.appConfig.getJsonObject("mysql"));
@@ -55,7 +58,15 @@ public class DB {
     DB.pools[1] = mssqlClient;
   }
 
-  public static Future<Boolean> validate(String sqlTemplate, JsonObject json) {
+  public static void initDB(MySQLConnectOptions mysqlOptions, MSSQLConnectOptions mssqlOptions) {
+    Pool mysqlClient = Pool.pool(VertxApp.vertx, mysqlOptions, new PoolOptions());
+    Pool mssqlClient = Pool.pool(VertxApp.vertx, mssqlOptions, new PoolOptions());
+
+    DB.pools[0] = mysqlClient;
+    DB.pools[1] = mssqlClient;
+  }
+
+  public static Future<Void> validate(String sqlTemplate, JsonObject json) {
     Pattern pattern = Pattern.compile("#\\{([^}]*)\\}");
     Matcher matcher = pattern.matcher(sqlTemplate);
 
@@ -71,7 +82,7 @@ public class DB {
       log.error("{}:\n{}\n{}", msg, sqlTemplate, json.encodePrettily());
       return Future.failedFuture(msg);
     }
-    return Future.succeededFuture(b);
+    return Future.succeededFuture();
   }
 
   public static String replacePlaceholder(String sqlTemplate, JsonObject json) {
@@ -102,6 +113,7 @@ public class DB {
 
     return validate(sqlTemplate, limitJson).compose(valid -> {
       String sql = replacePlaceholder(sqlTemplate, limitJson);
+      log.debug("sql: \n{}", sql);
       return pools[dbIdx].query(sql)
           .execute()
           .compose(rowSet -> {
@@ -123,7 +135,7 @@ public class DB {
   }
 
   public static Future<List<JsonObject>> queryByFile(String sqlFileName, JsonObject json, int dbIdx) {
-    return VertxApp.fs.readFile("sqlTemplate/" + sqlFileName + ".sql")
+    return FSUtils.fs.readFile("sqlTemplate/" + sqlFileName + ".sql")
         .onFailure(ar -> {
           log.error("{}", ar.getCause());
         })
@@ -139,11 +151,12 @@ public class DB {
   public static Future<Integer> insertBySql(String sqlTemplate, JsonObject json, int dbIdx) {
     // deep copy to avoid modify the original json
     JsonObject updateJson = json.copy();
-    updateJson.put("create_at", LocalDateTime.now());
+    updateJson.put("create_at", LocalDateTime.now().format(fmt));
     updateJson.put("create_by", 0);
 
     return validate(sqlTemplate, updateJson).compose(valid -> {
       String sql = replacePlaceholder(sqlTemplate, updateJson);
+      log.debug("sql: \n{}", sql);
       return pools[dbIdx].query(sql)
           .execute()
           .compose(rowSet -> {
@@ -165,11 +178,12 @@ public class DB {
   }
 
   public static Future<Integer> insertByFile(String sqlFileName, JsonObject json, int dbIdx) {
-    return VertxApp.fs.readFile("sqlTemplate/" + sqlFileName + ".sql")
+    return FSUtils.fs.readFile("sqlTemplate/" + sqlFileName + ".sql")
         .onFailure(ar -> {
           log.error("{}", ar.getCause());
         })
         .compose(sqlTemplate -> {
+          log.debug("sqlTemplate:\n{}", sqlTemplate);
           return insertBySql(sqlTemplate.toString(), json, dbIdx);
         });
   }
@@ -181,11 +195,12 @@ public class DB {
   public static Future<Integer> updateBySql(String sqlTemplate, JsonObject json, int dbIdx) {
     // deep copy to avoid modify the original json
     JsonObject updateJson = json.copy();
-    updateJson.put("update_at", LocalDateTime.now());
+    updateJson.put("update_at", LocalDateTime.now().format(fmt));
     updateJson.put("update_by", 0);
 
     return validate(sqlTemplate, updateJson).compose(valid -> {
       String sql = replacePlaceholder(sqlTemplate, updateJson);
+      log.debug("sql: \n{}", sql);
       return pools[dbIdx].query(sql)
           .execute()
           .compose(rowSet -> {
@@ -207,7 +222,7 @@ public class DB {
   }
 
   public static Future<Integer> updateByFile(String sqlFileName, JsonObject json, int dbIdx) {
-    return VertxApp.fs.readFile("sqlTemplate/" + sqlFileName + ".sql")
+    return FSUtils.fs.readFile("sqlTemplate/" + sqlFileName + ".sql")
         .onFailure(ar -> {
           log.error("{}", ar.getCause());
         })
@@ -223,6 +238,7 @@ public class DB {
   public static Future<Integer> deleteBySql(String sqlTemplate, JsonObject json, int dbIdx) {
     return validate(sqlTemplate, json).compose(valid -> {
       String sql = replacePlaceholder(sqlTemplate, json);
+      log.debug("sql: \n{}", sql);
       return pools[dbIdx].query(sql)
           .execute()
           .compose(rowSet -> {
@@ -245,7 +261,7 @@ public class DB {
   }
 
   public static Future<Integer> deleteByFile(String sqlFileName, JsonObject json, int dbIdx) {
-    return VertxApp.fs.readFile("sqlTemplate/" + sqlFileName + ".sql")
+    return FSUtils.fs.readFile("sqlTemplate/" + sqlFileName + ".sql")
         .onFailure(ar -> {
           log.error("{}", ar.getCause());
         })

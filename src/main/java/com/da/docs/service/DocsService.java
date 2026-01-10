@@ -38,7 +38,7 @@ public class DocsService {
               "DOC_INFO_CREATE",
               "127.0.0.1",
               "system",
-              "system",
+              "",
               obj.getString("file_name"));
         });
   }
@@ -54,7 +54,7 @@ public class DocsService {
               "DOC_INFO_UPDATE",
               "127.0.0.1",
               "system",
-              "system",
+              "",
               obj.getString("file_name"));
         });
   }
@@ -69,7 +69,7 @@ public class DocsService {
               "DOC_INFO_DELETE",
               "127.0.0.1",
               "system",
-              "system",
+              "",
               obj.getString("file_name"));
         });
   }

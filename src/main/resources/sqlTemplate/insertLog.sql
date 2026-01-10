@@ -11,7 +11,9 @@ INSERT INTO
     v7,
     v8,
     v9,
-    log_at
+    log_at,
+    create_at,
+    create_by
   )
 VALUES
   (
@@ -26,5 +28,7 @@ VALUES
     '#{v7}',
     '#{v8}',
     '#{v9}',
-    '#{log_at}'
+    '#{log_at}',
+    '#{create_at}',
+    '#{create_by}'
   )

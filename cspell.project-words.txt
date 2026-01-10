@@ -31,11 +31,13 @@ jndi
 ldaps
 luben
 modificationdate
+nomfich
 nopush
 omsd
 OSGI
 projectlombok
 REFERER
+resultdata
 SAGEX
 TLSNEW
 TLSOLD

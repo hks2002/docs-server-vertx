@@ -9,6 +9,7 @@
 package com.da.docs.service;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 import com.da.docs.db.DB;
 
@@ -18,6 +19,8 @@ import lombok.extern.log4j.Log4j2;
 
 @Log4j2
 public class LogService {
+
+  private static DateTimeFormatter fmt = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
   public static Future<Integer> addLog(
       String TCode,
@@ -41,7 +44,7 @@ public class LogService {
           } else if (result.size() == 1) {
             JsonObject log = new JsonObject();
 
-            log.put("template_id", result.iterator().next().getInteger("id"));
+            log.put("template_id", result.get(0).getInteger("id"));
             log.put("v0", v0);
             log.put("v1", v1);
             log.put("v2", v2);
@@ -52,7 +55,7 @@ public class LogService {
             log.put("v7", v7);
             log.put("v8", v8);
             log.put("v9", v9);
-            log.put("log_at", LocalDateTime.now());
+            log.put("log_at", LocalDateTime.now().format(fmt));
 
             return DB.insertByFile("insertLog", log);
           } else {

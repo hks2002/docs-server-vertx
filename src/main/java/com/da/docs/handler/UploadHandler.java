@@ -63,7 +63,6 @@ public class UploadHandler implements Handler<RoutingContext> {
 
     String ip = CommonUtils.getTrueRemoteIp(request);
     String loginName = user.principal().getString("login_name", "");
-    String fullName = user.principal().getString("full_name", "");
 
     List<FileUpload> uploads = context.fileUploads();
     if (uploads.size() > 1) {
@@ -82,7 +81,7 @@ public class UploadHandler implements Handler<RoutingContext> {
     new DocsService().moveFile(fromPath, fileName, "UPDATE")
         .onFailure(ar -> {
           log.error("{}", ar.getMessage());
-          LogService.addLog("DOC_UPLOAD_FAILED", ip, loginName, fullName, fileName);
+          LogService.addLog("DOC_UPLOAD_FAILED", ip, loginName, "", fileName);
           Response.internalError(context, "Upload file failed");
         })
         .compose(v -> {
@@ -90,12 +89,12 @@ public class UploadHandler implements Handler<RoutingContext> {
         })
         .onSuccess(rst -> {
           log.info("Upload file {} success", fileName);
-          LogService.addLog("DOC_UPLOAD_SUCCESS", ip, loginName, fullName, fileName);
+          LogService.addLog("DOC_UPLOAD_SUCCESS", ip, loginName, "", fileName);
           Response.success(context, "Upload file success");
         })
         .onFailure(ar -> {
           log.error("{}", ar.getMessage());
-          LogService.addLog("DOC_UPLOAD_FAILED", ip, loginName, fullName, fileName);
+          LogService.addLog("DOC_UPLOAD_FAILED", ip, loginName, "", fileName);
           Response.internalError(context, "Upload file failed");
         });
 
