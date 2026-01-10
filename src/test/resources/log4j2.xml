@@ -11,10 +11,6 @@
     <Root level="DEBUG">
       <AppenderRef ref="Console" />
     </Root>
-
-    <Logger name="com.zaxxer.hikari.pool.HikariPool" level="ERROR">
-      <AppenderRef ref="Console" />
-    </Logger>
   </Loggers>
 
   <Appenders>
@@ -24,6 +20,6 @@
         <Pattern>${PatternLayoutConsole}</Pattern>
       </PatternLayout>
     </Console>
-    com.zaxxer.hikari.pool.HikariPool </Appenders>
+  </Appenders>
 
 </Configuration>

@@ -35,8 +35,8 @@
         <TimeBasedTriggeringPolicy modulate="true" interval="1" />
       </Policies>
       <DefaultRolloverStrategy>
-        <Delete basePath="${baseLogDir}" maxDepth="1">
-          <IfFileName glob="*.log" />
+        <Delete basePath="${LOG_HOME}" maxDepth="1">
+          <IfFileName glob="@project.artifactId@.*.log" />
           <IfLastModified age="15d" />
         </Delete>
       </DefaultRolloverStrategy>
