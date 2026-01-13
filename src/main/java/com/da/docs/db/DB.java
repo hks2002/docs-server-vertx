@@ -136,11 +136,11 @@ public class DB {
 
   public static Future<List<JsonObject>> queryByFile(String sqlFileName, JsonObject json, int dbIdx) {
     return FSUtils.fs.readFile("sqlTemplate/" + sqlFileName + ".sql")
-        .onFailure(ar -> {
-          log.error("{}", ar.getCause());
-        })
         .compose(sqlTemplate -> {
           return queryBySql(sqlTemplate.toString(), json, dbIdx);
+        })
+        .onFailure(ar -> {
+          log.error("{}", ar.getCause());
         });
   }
 
@@ -179,12 +179,11 @@ public class DB {
 
   public static Future<Integer> insertByFile(String sqlFileName, JsonObject json, int dbIdx) {
     return FSUtils.fs.readFile("sqlTemplate/" + sqlFileName + ".sql")
-        .onFailure(ar -> {
-          log.error("{}", ar.getCause());
-        })
         .compose(sqlTemplate -> {
           log.debug("sqlTemplate:\n{}", sqlTemplate);
           return insertBySql(sqlTemplate.toString(), json, dbIdx);
+        }).onFailure(ar -> {
+          log.error("{}", ar.getCause());
         });
   }
 
@@ -223,11 +222,10 @@ public class DB {
 
   public static Future<Integer> updateByFile(String sqlFileName, JsonObject json, int dbIdx) {
     return FSUtils.fs.readFile("sqlTemplate/" + sqlFileName + ".sql")
-        .onFailure(ar -> {
-          log.error("{}", ar.getCause());
-        })
         .compose(sqlTemplate -> {
           return updateBySql(sqlTemplate.toString(), json, dbIdx);
+        }).onFailure(ar -> {
+          log.error("{}", ar.getCause());
         });
   }
 
@@ -262,11 +260,11 @@ public class DB {
 
   public static Future<Integer> deleteByFile(String sqlFileName, JsonObject json, int dbIdx) {
     return FSUtils.fs.readFile("sqlTemplate/" + sqlFileName + ".sql")
-        .onFailure(ar -> {
-          log.error("{}", ar.getCause());
-        })
         .compose(sqlTemplate -> {
           return deleteBySql(sqlTemplate.toString(), json, dbIdx);
+        })
+        .onFailure(ar -> {
+          log.error("{}", ar.getCause());
         });
   }
 

@@ -5,4 +5,4 @@ SET
   update_at = '#{update_at}',
   update_by = '#{update_by}'
 WHERE
-  id = '#{id}';
+  BPCode = '#{BPCode}';
