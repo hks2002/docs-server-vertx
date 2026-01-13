@@ -17,7 +17,6 @@ import com.da.docs.service.DocsService;
 import com.da.docs.utils.FSUtils;
 import com.da.docs.utils.Response;
 
-import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpHeaders;
@@ -96,35 +95,35 @@ public class SearchDocsHandler implements Handler<RoutingContext> {
                         return Future.succeededFuture(o);
                       });
                     }
-                    return Future.failedFuture("File not found" + toFileFullPath);
-
+                    log.debug("File not found:{}", fileName);
+                    return Future.succeededFuture(null);
                   });
 
                 });
             futures.add(futureDoc);
           } // end of for list
 
-          return Future.join(futures).onComplete(ar -> {
-            if (ar.succeeded()) {
-              CompositeFuture cf = ar.result();
-
-              // 遍历每个 future 的结果
-              List<JsonObject> resultList = new ArrayList<>();
-              for (int i = 0; i < cf.size(); i++) {
-                if (cf.succeeded(i)) {
-                  resultList.add(cf.resultAt(i)); // ✅ resultAt(i)
-                } else {
-                  log.warn("Future at index {} failed: {}", i, cf.cause(i).getMessage());
+          return Future.join(futures)
+              .map(cf -> {
+                List<JsonObject> result = new ArrayList<>();
+                for (int i = 0; i < cf.size(); i++) {
+                  JsonObject o = cf.resultAt(i);
+                  if (o != null)
+                    result.add(o);
                 }
-              }
-
-              log.debug("resultList:{}", resultList);
-              response.putHeader(HttpHeaders.CONTENT_TYPE, "application/json").end(resultList.toString());
-            } else {
-              log.error("Join failed: {}", ar.cause());
-              response.putHeader(HttpHeaders.CONTENT_TYPE, "application/json").end("[]");
-            }
-          });
+                return result;
+              });
+        })
+        .onSuccess(resultList -> {
+          response
+              .putHeader(HttpHeaders.CONTENT_TYPE, "application/json")
+              .end(resultList.toString());
+        })
+        .onFailure(err -> {
+          log.error("search docs failed", err);
+          response
+              .putHeader(HttpHeaders.CONTENT_TYPE, "application/json")
+              .end("[]");
         });
 
   }
