@@ -20,39 +20,43 @@ public class WebSocketHandler implements Handler<ServerWebSocket> {
 
   @Override
   public void handle(ServerWebSocket ws) {
+
     if (!"/docs-ws".equals(ws.path())) {
       ws.close((short) 1008, "Forbidden");
       return;
     }
 
-    // Receive message
     ws.textMessageHandler(msg -> {
-      log.debug(ws.remoteAddress() + ":" + msg);
+      try {
+        JsonObject json = new JsonObject(msg);
 
-      JsonObject json = new JsonObject(msg);
-      if (json.containsKey("userName")) {
-        String userName = json.getString("userName");
-        String userInfo = json.getString("userInfo", "Missing userInfo");
+        if (json.containsKey("userName")) {
+          String userName = json.getString("userName");
+          String userInfo = json.getString("userInfo", "Missing userInfo");
 
-        MessageService.addUser(ws, userName);
+          MessageService.addUser(ws, userName);
 
-        ws.writeTextMessage(JsonObject.of("msg", "Hello " + userInfo + "!").encode());
-      } else {
-        ws.writeTextMessage(JsonObject.of("msg", "Message received: " + msg).encode());
+          if (!ws.isClosed()) {
+            ws.writeTextMessage(
+                JsonObject.of("msg", "Hello " + userInfo + "!").encode());
+          }
+        }
+      } catch (Exception e) {
+        log.warn("Invalid WS message from {}: {}", ws.remoteAddress(), msg);
       }
     });
 
-    // Close event
     ws.closeHandler(v -> {
       MessageService.removeUser(ws.remoteAddress().toString());
-      log.debug("Closed: {}", ws.remoteAddress());
+      log.debug("WebSocket closed: {}", ws.remoteAddress());
     });
 
-    // Exception event
     ws.exceptionHandler(err -> {
-      log.error("Error in WebSocket: {}", err.getMessage());
-      err.printStackTrace();
+      if (ws.isClosed()) {
+        log.debug("WebSocket already closed: {}", ws.remoteAddress());
+      } else {
+        log.warn("WebSocket exception", err);
+      }
     });
   }
-
 }
