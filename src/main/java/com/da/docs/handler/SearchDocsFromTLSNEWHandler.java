@@ -2,12 +2,13 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                            *
  * @CreatedDate           : 2025-03-10 01:05:38                                                                      *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                            *
- * @LastEditDate          : 2025-10-04 16:11:46                                                                      *
+ * @LastEditDate          : 2026-01-15 23:55:31                                                                      *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                          *
  ********************************************************************************************************************/
 
 package com.da.docs.handler;
 
+import java.util.List;
 import java.util.Optional;
 
 import com.da.docs.annotation.GetMapping;
@@ -59,7 +60,14 @@ public class SearchDocsFromTLSNEWHandler implements Handler<RoutingContext> {
         .onSuccess(docs -> {
           response.putHeader(HttpHeaders.CONTENT_TYPE, "application/json");
           if (docs.size() > 0) {
-            response.end(docs.encode());
+
+            @SuppressWarnings("unchecked")
+            List<JsonObject> list = docs.getList();
+            list.sort((a, b) -> {
+              return b.getLong("lastModified")
+                  .compareTo(a.getLong("lastModified"));
+            });
+            response.end(list.toString());
           } else {
             response.end("[]");
           }

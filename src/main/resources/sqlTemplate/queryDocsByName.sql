@@ -5,7 +5,7 @@ FROM
 WHERE
   file_name like '#{file_name}'
 ORDER BY
-  id DESC
+  doc_modified_at DESC
 LIMIT
   #{limit}
 OFFSET
