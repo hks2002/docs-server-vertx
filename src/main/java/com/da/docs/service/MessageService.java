@@ -1,16 +1,27 @@
+/*********************************************************************************************************************
+ * @Author                : Robert Huang<56649783@qq.com>                                                            *
+ * @CreatedDate           : 2026-01-15 18:53:58                                                                      *
+ * @LastEditors           : Robert Huang<56649783@qq.com>                                                            *
+ * @LastEditDate          : 2026-01-15 19:04:53                                                                      *
+ * @CopyRight             : Dedienne Aerospace China ZhuHai                                                          *
+ ********************************************************************************************************************/
+
 package com.da.docs.service;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import io.vertx.core.http.ServerWebSocket;
+import lombok.extern.log4j.Log4j2;
 
+@Log4j2
 public class MessageService {
 
-  // key is client's address
-  private static final Map<String, ServerWebSocket> addressWebSocketMap = new ConcurrentHashMap<>();
-  // key is user name, value is client's address
-  private static final Map<String, String> userAddressMap = new ConcurrentHashMap<>();
+  // ws -> username
+  private static final Map<ServerWebSocket, String> wsUserMap = new ConcurrentHashMap<>();
+
+  // username -> ws
+  private static final Map<String, ServerWebSocket> userWsMap = new ConcurrentHashMap<>();
 
   /**
    * Adds a user to the collection of connected users
@@ -19,26 +30,26 @@ public class MessageService {
    * @param username The username of the client
    */
   public static void addUser(ServerWebSocket ws, String username) {
-    // Store the WebSocket connection in the map with client's address as the key
-    addressWebSocketMap.put(ws.remoteAddress().toString(), ws);
-    userAddressMap.put(username, ws.remoteAddress().toString());
+    if (wsUserMap.containsKey(ws))
+      return;
+
+    wsUserMap.put(ws, username);
+    ServerWebSocket old = userWsMap.put(username, ws);
+    if (old != null && old != ws) {
+      removeUser(old);
+    }
   }
 
   /**
    * Removes a user from the collection of connected users, the websocket
    * connection will also be closed
    * 
-   * @param clientId The identifier of the client to be removed
+   * @param ws The identifier of the client to be removed
    */
-  public static void removeUser(String clientId) {
-    addressWebSocketMap.remove(clientId);
-
-    for (Map.Entry<String, String> entry : userAddressMap.entrySet()) {
-      if (entry.getValue().equals(clientId)) {
-        String userName = entry.getKey();
-        userAddressMap.remove(userName);
-        break; // quit if found
-      }
+  public static void removeUser(ServerWebSocket ws) {
+    String username = wsUserMap.remove(ws);
+    if (username != null) {
+      userWsMap.remove(username);
     }
   }
 
@@ -48,41 +59,29 @@ public class MessageService {
    * @param clientId The identifier of the client to send the message to
    * @param message  The message to be sent
    */
-  public static void sendMessageToClient(String clientId, String message) {
-    ServerWebSocket ws = addressWebSocketMap.get(clientId);
-    if (ws != null && !ws.isClosed()) {
-      ws.writeTextMessage(message);
-    }
-  }
-
-  /**
-   * Send a message to a specific user
-   * 
-   * @param username The username of the user to send the message to
-   * @param message  The message to be sent
-   */
-  public static void sendMessageToUser(String username, String message) {
-    if (username.toLowerCase().equals("all")) {
+  public static void sendToUser(String username, String message) {
+    if ("all".equalsIgnoreCase(username)) {
       broadcast(message);
       return;
     }
 
-    String clientId = userAddressMap.get(username);
-    if (clientId != null) {
-      sendMessageToClient(clientId, message);
-    }
+    ServerWebSocket ws = userWsMap.get(username);
+    send(ws, message);
   }
 
-  /**
-   * Broadcasts a message to all connected clients
-   * 
-   * @param message The message to be broadcasted to all clients
-   */
   public static void broadcast(String message) {
-    for (ServerWebSocket ws : addressWebSocketMap.values()) {
-      if (!ws.isClosed()) {
-        ws.writeTextMessage(message);
-      }
+    wsUserMap.keySet().forEach(ws -> send(ws, message));
+  }
+
+  private static void send(ServerWebSocket ws, String message) {
+    if (ws == null || ws.isClosed())
+      return;
+
+    if (ws.writeQueueFull()) {
+      // 客户端太慢，直接丢或记录
+      return;
     }
+
+    ws.writeTextMessage(message);
   }
 }

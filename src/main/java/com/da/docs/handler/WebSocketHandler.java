@@ -1,10 +1,10 @@
-/**********************************************************************************************************************
- * @Author                : Robert Huang<56649783@qq.com>                                                             *
- * @CreatedDate           : 2025-03-16 11:51:49                                                                       *
- * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-09-23 22:25:09                                                                       *
- * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
- *********************************************************************************************************************/
+/*********************************************************************************************************************
+ * @Author                : Robert Huang<56649783@qq.com>                                                            *
+ * @CreatedDate           : 2025-03-16 11:51:49                                                                      *
+ * @LastEditors           : Robert Huang<56649783@qq.com>                                                            *
+ * @LastEditDate          : 2026-01-15 19:07:35                                                                      *
+ * @CopyRight             : Dedienne Aerospace China ZhuHai                                                          *
+ ********************************************************************************************************************/
 
 package com.da.docs.handler;
 
@@ -36,18 +36,21 @@ public class WebSocketHandler implements Handler<ServerWebSocket> {
 
           MessageService.addUser(ws, userName);
 
-          if (!ws.isClosed()) {
-            ws.writeTextMessage(
-                JsonObject.of("msg", "Hello " + userInfo + "!").encode());
-          }
+          ws.writeTextMessage(
+              JsonObject.of("msg", "Hello " + userInfo + "!").encode());
         }
       } catch (Exception e) {
+        MessageService.removeUser(ws);
+        ws.close();
         log.warn("Invalid WS message from {}: {}", ws.remoteAddress(), msg);
       }
     });
 
+    // back pressure
+    ws.setWriteQueueMaxSize(64 * 1024);
+
     ws.closeHandler(v -> {
-      MessageService.removeUser(ws.remoteAddress().toString());
+      MessageService.removeUser(ws);
       log.debug("WebSocket closed: {}", ws.remoteAddress());
     });
 
@@ -58,5 +61,6 @@ public class WebSocketHandler implements Handler<ServerWebSocket> {
         log.warn("WebSocket exception", err);
       }
     });
+
   }
 }

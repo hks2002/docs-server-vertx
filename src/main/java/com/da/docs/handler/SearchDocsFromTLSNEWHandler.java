@@ -90,13 +90,13 @@ public class SearchDocsFromTLSNEWHandler implements Handler<RoutingContext> {
                   .compose(checkResult -> {
                     switch (checkResult) {
                       case "SKIP":
-                        MessageService.sendMessageToUser(userName, message.put("msg", "DMS_DOWNLOAD_SKIP").encode());
+                        MessageService.sendToUser(userName, message.put("msg", "DMS_DOWNLOAD_SKIP").encode());
                         break;
                       case "START":
-                        MessageService.sendMessageToUser(userName, message.put("msg", "DMS_DOWNLOAD_START").encode());
+                        MessageService.sendToUser(userName, message.put("msg", "DMS_DOWNLOAD_START").encode());
                         break;
                       case "REDOWNLOAD":
-                        MessageService.sendMessageToUser(userName,
+                        MessageService.sendToUser(userName,
                             message.put("msg", "DMS_DOWNLOAD_REDOWNLOAD").encode());
                         break;
                     }
@@ -107,13 +107,13 @@ public class SearchDocsFromTLSNEWHandler implements Handler<RoutingContext> {
                           .onSuccess(res -> {
                             switch (res) {
                               case "DOWNLOADED":
-                                MessageService.sendMessageToUser(userName,
+                                MessageService.sendToUser(userName,
                                     message.put("msg", "DMS_DOWNLOAD_SUCCESS").encode());
                                 break;
                             }
                           })
                           .onFailure(err -> {
-                            MessageService.sendMessageToUser(userName,
+                            MessageService.sendToUser(userName,
                                 message.put("msg", "DMS_DOWNLOAD_FAILURE").encode());
                           });
                     }
