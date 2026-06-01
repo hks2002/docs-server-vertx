@@ -1,10 +1,10 @@
-/**********************************************************************************************************************
- * @Author                : Robert Huang<56649783@qq.com>                                                             *
- * @CreatedDate           : 2025-03-21 15:17:16                                                                       *
- * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2026-01-04 19:34:13                                                                       *
- * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
- *********************************************************************************************************************/
+/***********************************************************************************************************************
+ * @Author                : Robert Huang<56649783@qq.com>                                                              *
+ * @CreatedDate           : 2025-03-21 15:17:16                                                                        *
+ * @LastEditors           : Robert Huang<56649783@qq.com>                                                              *
+ * @LastEditDate          : 2026-05-25 12:42:29                                                                        *
+ * @CopyRight             : Dedienne Aerospace China ZhuHai                                                            *
+ **********************************************************************************************************************/
 
 package com.da.docs.service;
 
@@ -12,10 +12,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import com.da.docs.VertxApp;
-import com.da.docs.db.DB;
+import com.da.docs.serviceStatic.DB;
 
 import io.vertx.core.Future;
+import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.auth.User;
 import io.vertx.ext.auth.authentication.UsernamePasswordCredentials;
@@ -25,18 +25,16 @@ import lombok.extern.log4j.Log4j2;
 
 @Log4j2
 public class UserService {
+  private Vertx vertx;
   private JsonObject defaultAccess = null;
   private String adminPassword = null;
-  private final UserFuncService userFuncService = new UserFuncService();
+  private UserFuncService userFuncService = null;
 
-  public UserService() {
-    defaultAccess = VertxApp.appConfig.getJsonObject("defaultAccess");
-    adminPassword = VertxApp.appConfig.getString("adminPassword");
-  }
-
-  public void setup(JsonObject defaultAccess, String adminPassword) {
-    this.defaultAccess = defaultAccess;
-    this.adminPassword = adminPassword;
+  public UserService(Vertx vertx) {
+    this.vertx = vertx;
+    defaultAccess = vertx.getOrCreateContext().config().getJsonObject("defaultAccess");
+    adminPassword = vertx.getOrCreateContext().config().getString("adminPassword");
+    userFuncService = new UserFuncService(vertx);
   }
 
   public Future<Integer> addUser(JsonObject obj) {
@@ -46,7 +44,7 @@ public class UserService {
   public Future<User> addUser(User user, String ip) {
     JsonObject userInfo = user.principal();
     String userName = userInfo.getString("login_name");
-    String fullName = userInfo.getString("full_name");
+    // String fullName = userInfo.getString("full_name");
 
     return addUser(userInfo)
         .onFailure(err -> {
@@ -55,10 +53,10 @@ public class UserService {
         .compose(ar -> {
           LogService.addLog("USER_INIT_SUCCESS", ip, userName);
           // init user's access
-          Future<Integer> f11 = userFuncService.addUserFunc(userName, "DOCS_READ", defaultAccess.getBoolean("read"));
-          Future<Integer> f12 = userFuncService.addUserFunc(userName, "DOCS_WRITE", defaultAccess.getBoolean("write"));
+          Future<Integer> f1 = userFuncService.addUserFunc(userName, "DOCS_READ", defaultAccess.getBoolean("read"));
+          Future<Integer> f2 = userFuncService.addUserFunc(userName, "DOCS_WRITE", defaultAccess.getBoolean("write"));
 
-          return Future.all(f11, f12)
+          return Future.all(f1, f2)
               .onFailure(err -> {
                 LogService.addLog("DOC_ACCESS_INIT_FAILED", ip, userName);
               })
@@ -70,11 +68,13 @@ public class UserService {
   }
 
   public Future<Integer> modifyUser(JsonObject obj, String ip) {
-    return DB.updateByFile("updateUser", obj).onSuccess(ar -> {
-      LogService.addLog("USER_UPDATE_SUCCESS", ip, obj.getString("login_name"));
-    }).onFailure(err -> {
-      LogService.addLog("USER_UPDATE_FAILED", ip, obj.getString("login_name"));
-    });
+    return DB.updateByFile("updateUser", obj)
+        .onSuccess(ar -> {
+          LogService.addLog("USER_UPDATE_SUCCESS", ip, obj.getString("login_name"));
+        })
+        .onFailure(err -> {
+          LogService.addLog("USER_UPDATE_FAILED", ip, obj.getString("login_name"));
+        });
   }
 
   public Future<List<JsonObject>> searchUser() {
@@ -84,7 +84,7 @@ public class UserService {
   public Future<User> setUserPermission(User user, String ip) {
     JsonObject userInfo = user.principal();
     String userName = userInfo.getString("login_name");
-    String fullName = userInfo.getString("full_name");
+    // String fullName = userInfo.getString("full_name");
 
     // check if user has read/write permission
     Future<List<JsonObject>> f1 = userFuncService
@@ -110,12 +110,15 @@ public class UserService {
 
           if (d1.size() > 0) {
             authorizations.add(PermissionBasedAuthorization.create("DOCS_READ"));
+            user.principal().put("DOCS_READ", true);
           }
           if (d2.size() > 0) {
             authorizations.add(PermissionBasedAuthorization.create("DOCS_WRITE"));
+            user.principal().put("DOCS_WRITE", true);
           }
           if (d3.size() > 0) {
             authorizations.add(PermissionBasedAuthorization.create("ADMIN"));
+            user.principal().put("ADMIN", true);
           }
 
           user.authorizations().put("docs", authorizations);
@@ -154,7 +157,7 @@ public class UserService {
           });
     } else {
       // for ldap users:
-      return new ADServices().Authenticate(userName, password)
+      return new ADServices(vertx).Authenticate(userName, password)
           .onFailure(err -> {
             LogService.addLog("LOGIN_FAILED", ip, userName);
           })

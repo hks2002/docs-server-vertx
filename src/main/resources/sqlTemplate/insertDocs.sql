@@ -1,9 +1,9 @@
 INSERT INTO
   docs (
     file_name,
-    location,
     dms_id,
     size,
+    is_link,
     doc_create_at,
     doc_modified_at,
     md5,
@@ -13,9 +13,9 @@ INSERT INTO
 VALUES
   (
     '#{file_name}',
-    '#{location}',
     '#{dms_id}',
     '#{size}',
+    '#{is_link}',
     '#{doc_create_at}',
     '#{doc_modified_at}',
     '#{md5}',

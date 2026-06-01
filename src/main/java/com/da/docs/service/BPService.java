@@ -10,7 +10,7 @@ package com.da.docs.service;
 
 import java.util.List;
 
-import com.da.docs.db.DB;
+import com.da.docs.serviceStatic.DB;
 
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;

@@ -1,30 +1,36 @@
-/**********************************************************************************************************************
- * @Author                : Robert Huang<56649783@qq.com>                                                             *
- * @CreatedDate           : 2025-03-21 15:17:16                                                                       *
- * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-09-19 10:45:24                                                                       *
- * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
- *********************************************************************************************************************/
+/***********************************************************************************************************************
+ * @Author                : Robert Huang<56649783@qq.com>                                                              *
+ * @CreatedDate           : 2025-03-21 15:17:16                                                                        *
+ * @LastEditors           : Robert Huang<56649783@qq.com>                                                              *
+ * @LastEditDate          : 2026-05-25 18:38:20                                                                        *
+ * @CopyRight             : Dedienne Aerospace China ZhuHai                                                            *
+ **********************************************************************************************************************/
 
 package com.da.docs.service;
 
 import java.util.List;
 
-import com.da.docs.db.DB;
+import com.da.docs.serviceStatic.DB;
 
 import io.vertx.core.Future;
+import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import lombok.extern.log4j.Log4j2;
 
 @Log4j2
 public class UserFuncService {
+  private Vertx vertx;
+
+  public UserFuncService(Vertx vertx) {
+    this.vertx = vertx;
+  }
 
   public Future<Integer> addUserFunc(JsonObject obj) {
     return DB.insertByFile("insertUserFunc", obj);
   }
 
   public Future<Integer> addUserFunc(String login_name, String func_code, boolean enable) {
-    UserService userService = new UserService();
+    UserService userService = new UserService(vertx);
     FuncService funcService = new FuncService();
     Future<List<JsonObject>> f1 = userService.searchUserByLoginName(JsonObject.of("login_name", login_name));
     Future<List<JsonObject>> f2 = funcService.searchFuncByCode(JsonObject.of("func_code", func_code));
@@ -50,7 +56,7 @@ public class UserFuncService {
   }
 
   public Future<Integer> modifyUserFunc(String login_name, String func_code, boolean enable) {
-    UserService userService = new UserService();
+    UserService userService = new UserService(vertx);
     FuncService funcService = new FuncService();
     Future<List<JsonObject>> f1 = userService.searchUserByLoginName(JsonObject.of("login_name", login_name));
     Future<List<JsonObject>> f2 = funcService.searchFuncByCode(JsonObject.of("func_code", func_code));
@@ -91,5 +97,9 @@ public class UserFuncService {
 
   public Future<List<JsonObject>> searchUserFuncByUserIdFuncId(JsonObject userFunc) {
     return DB.queryByFile("queryUserFuncByUserIdFuncId", userFunc);
+  }
+
+  public Future<List<JsonObject>> searchUserFuncMatrix(JsonObject cri) {
+    return DB.queryByFile("queryUserFuncMatrix", cri);
   }
 }

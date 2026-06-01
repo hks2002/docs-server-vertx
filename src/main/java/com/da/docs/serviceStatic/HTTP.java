@@ -1,14 +1,12 @@
-/**********************************************************************************************************************
- * @Author                : Robert Huang<56649783@qq.com>                                                             *
- * @CreatedDate           : 2022-03-26 17:57:07                                                                       *
- * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2026-01-04 17:05:51                                                                       *
- * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
- *********************************************************************************************************************/
+/***********************************************************************************************************************
+ * @Author                : Robert Huang<56649783@qq.com>                                                              *
+ * @CreatedDate           : 2022-03-26 17:57:07                                                                        *
+ * @LastEditors           : Robert Huang<56649783@qq.com>                                                              *
+ * @LastEditDate          : 2026-05-22 12:03:00                                                                        *
+ * @CopyRight             : Dedienne Aerospace China ZhuHai                                                            *
+ **********************************************************************************************************************/
 
-package com.da.docs.service;
-
-import com.da.docs.VertxApp;
+package com.da.docs.serviceStatic;
 
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
@@ -22,9 +20,12 @@ import lombok.extern.log4j.Log4j2;
 import netscape.javascript.JSObject;
 
 @Log4j2
-public class HttpService {
-  private static WebClient client = WebClient.create(VertxApp.vertx == null ? Vertx.vertx() : VertxApp.vertx,
-      new WebClientOptions().setTrustAll(true).setVerifyHost(false));
+public class HTTP {
+  private static WebClient client = null;
+
+  public static void setup(Vertx vertx) {
+    client = WebClient.create(vertx, new WebClientOptions().setTrustAll(true).setVerifyHost(false));
+  }
 
   public static Future<String> get(String url) {
     return request(HttpMethod.GET, url, null);
@@ -67,7 +68,7 @@ public class HttpService {
       log.debug("\n{}", res.body());
       return Future.succeededFuture(res.bodyAsString());
     }).onFailure(err -> {
-      log.error("HTTP {} request to {} failed: {}", method, url, err.getMessage());
+      log.error("HTTP {} request to {} failed: {}", method, url, err.getCause());
     });
 
   }

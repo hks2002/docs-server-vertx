@@ -155,7 +155,7 @@ public class ITextTools {
       pdf.close();
       return true;
     } catch (Exception e) {
-      log.error("Add water marker failed: {}", e.getMessage());
+      log.error("Add water marker failed: {}", e.getCause());
       return false;
     }
   }
@@ -213,7 +213,7 @@ public class ITextTools {
 
       return true;
     } catch (Exception e) {
-      log.error("Convert to pdf failed: {}", e.getMessage());
+      log.error("Convert to pdf failed: {}", e.getCause());
       return false;
     }
   }

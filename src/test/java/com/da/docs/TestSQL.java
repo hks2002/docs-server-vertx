@@ -10,7 +10,7 @@ package com.da.docs;
 
 import org.junit.jupiter.api.Test;
 
-import com.da.docs.db.DB;
+import com.da.docs.serviceStatic.DB;
 
 import io.vertx.core.json.JsonObject;
 import lombok.extern.log4j.Log4j2;

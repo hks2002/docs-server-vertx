@@ -6,8 +6,7 @@
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
  *********************************************************************************************************************/
 
-
-package com.da.docs.service;
+package com.da.docs.serviceStatic;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -16,7 +15,7 @@ import io.vertx.core.http.ServerWebSocket;
 import lombok.extern.log4j.Log4j2;
 
 @Log4j2
-public class MessageService {
+public class MSG {
 
   // ws -> username
   private static final Map<ServerWebSocket, String> wsUserMap = new ConcurrentHashMap<>();

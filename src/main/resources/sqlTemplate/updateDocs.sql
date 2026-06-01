@@ -1,9 +1,9 @@
 UPDATE docs
 SET
   file_name = '#{file_name}',
-  location = '#{location}',
   dms_id = '#{dms_id}',
   size = '#{size}',
+  is_link = #{is_link},
   doc_create_at = '#{doc_create_at}',
   doc_modified_at = '#{doc_modified_at}',
   md5 = '#{md5}',

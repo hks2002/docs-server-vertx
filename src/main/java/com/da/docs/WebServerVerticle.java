@@ -1,15 +1,19 @@
-/**********************************************************************************************************************
- * @Author                : Robert Huang<56649783@qq.com>                                                             *
- * @CreatedDate           : 2025-03-08 19:11:51                                                                       *
- * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-12-23 09:55:36                                                                       *
- * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
- *********************************************************************************************************************/
+/***********************************************************************************************************************
+ * @Author                : Robert Huang<56649783@qq.com>                                                              *
+ * @CreatedDate           : 2025-03-08 19:11:51                                                                        *
+ * @LastEditors           : Robert Huang<56649783@qq.com>                                                              *
+ * @LastEditDate          : 2026-05-21 23:32:41                                                                        *
+ * @CopyRight             : Dedienne Aerospace China ZhuHai                                                            *
+ **********************************************************************************************************************/
 
 package com.da.docs;
 
-import com.da.docs.db.DB;
 import com.da.docs.handler.WebSocketHandler;
+import com.da.docs.serviceStatic.DB;
+import com.da.docs.serviceStatic.DMS;
+import com.da.docs.serviceStatic.FS;
+import com.da.docs.serviceStatic.HTTP;
+import com.da.docs.serviceStatic.RESPONSE;
 
 import io.vertx.core.Future;
 import io.vertx.core.VerticleBase;
@@ -22,14 +26,17 @@ public class WebServerVerticle extends VerticleBase {
   @Override
   public Future<?> start() {
     JsonObject httpConfig = config().getJsonObject("http");
-
-    // init DB
-    DB.initDB();
+    DB.setup(vertx);
+    DMS.setup(vertx);
+    FS.setup(vertx);
+    HTTP.setup(vertx);
+    RESPONSE.setup(vertx);
 
     return vertx.createHttpServer(new HttpServerOptions(httpConfig))
-        .requestHandler(new WebRouter())
+        .requestHandler(new WebRouter(vertx))
         .webSocketHandler(new WebSocketHandler())
-        .listen().onSuccess(http -> {
+        .listen()
+        .onSuccess(http -> {
           log.info("HTTP server started on port {}", http.actualPort());
         });
   }

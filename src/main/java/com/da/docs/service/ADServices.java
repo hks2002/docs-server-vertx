@@ -1,10 +1,10 @@
-/**********************************************************************************************************************
- * @Author                : Robert Huang<56649783@qq.com>                                                             *
- * @CreatedDate           : 2025-03-28 00:03:05                                                                       *
- * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2026-01-04 19:29:47                                                                       *
- * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
- *********************************************************************************************************************/
+/***********************************************************************************************************************
+ * @Author                : Robert Huang<56649783@qq.com>                                                              *
+ * @CreatedDate           : 2025-03-28 00:03:05                                                                        *
+ * @LastEditors           : Robert Huang<56649783@qq.com>                                                              *
+ * @LastEditDate          : 2026-05-22 11:35:15                                                                        *
+ * @CopyRight             : Dedienne Aerospace China ZhuHai                                                            *
+ **********************************************************************************************************************/
 
 package com.da.docs.service;
 
@@ -21,9 +21,8 @@ import javax.naming.directory.InitialDirContext;
 import javax.naming.directory.SearchControls;
 import javax.naming.directory.SearchResult;
 
-import com.da.docs.VertxApp;
-
 import io.vertx.core.Future;
+import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import lombok.extern.log4j.Log4j2;
 
@@ -34,8 +33,8 @@ public class ADServices {
   private String searchBase = null;
   private Hashtable<String, String> env = new Hashtable<>();
 
-  public ADServices() {
-    JsonObject appConfig = VertxApp.appConfig;
+  public ADServices(Vertx vertx) {
+    JsonObject appConfig = vertx.getOrCreateContext().config();
     JsonObject adConfig = appConfig.getJsonObject("adServer");
     adServerUrl = adConfig.getString("url");
     adServerDomain = adConfig.getString("domain");
@@ -43,14 +42,6 @@ public class ADServices {
 
     env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
     env.put(Context.SECURITY_AUTHENTICATION, "simple");
-    env.put(Context.PROVIDER_URL, adServerUrl);
-  }
-
-  public void setup(String url, String domain, String base) {
-    adServerUrl = url;
-    adServerDomain = domain;
-    searchBase = base;
-
     env.put(Context.PROVIDER_URL, adServerUrl);
   }
 

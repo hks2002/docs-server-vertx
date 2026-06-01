@@ -1,10 +1,10 @@
-/**********************************************************************************************************************
- * @Author                : Robert Huang<56649783@qq.com>                                                             *
- * @CreatedDate           : 2025-03-28 00:21:32                                                                       *
- * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2026-01-04 17:06:21                                                                       *
- * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
- *********************************************************************************************************************/
+/***********************************************************************************************************************
+ * @Author                : Robert Huang<56649783@qq.com>                                                              *
+ * @CreatedDate           : 2025-03-28 00:21:32                                                                        *
+ * @LastEditors           : Robert Huang<56649783@qq.com>                                                              *
+ * @LastEditDate          : 2026-05-24 17:26:27                                                                        *
+ * @CopyRight             : Dedienne Aerospace China ZhuHai                                                            *
+ **********************************************************************************************************************/
 
 package com.da.docs;
 
@@ -24,7 +24,9 @@ import com.da.docs.utils.CommonUtils;
 import com.da.docs.utils.PackageUtils;
 
 import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.FaviconHandler;
@@ -37,6 +39,19 @@ import lombok.extern.log4j.Log4j2;
 
 @Log4j2
 public class WebRouter extends RouterImpl {
+
+  private static final java.util.Map<String, Class<?>> PATH_TO_HANDLER_MAP = new java.util.concurrent.ConcurrentHashMap<>();
+
+  public static Class<?> getHandlerClassByPath(String path) {
+    return PATH_TO_HANDLER_MAP.get(path);
+  }
+
+  public WebRouter(Vertx vertx) {
+    super(vertx);
+    registerGlobalHandler(vertx);
+    registerAllPathHandler();
+    registerPathHandler();
+  }
 
   class Pair {
     // Return a map entry (key-value pair) from the specified values
@@ -57,7 +72,7 @@ public class WebRouter extends RouterImpl {
           routeHandler.add(handlerClass);
         }
       } catch (Exception e) {
-        log.error("{}", e);
+        log.error("{}", e.getCause());
       }
     });
 
@@ -84,7 +99,7 @@ public class WebRouter extends RouterImpl {
           pathsHandler.put(deleteMappingAnnotation.value(), Pair.of(HttpMethod.DELETE, handlerClass));
         }
       } catch (Exception e) {
-        log.error("{}", e);
+        log.error("{}", e.getCause());
       }
     });
 
@@ -105,20 +120,22 @@ public class WebRouter extends RouterImpl {
       constructor = getConstructor(clazz);
       return constructor.newInstance();
     } catch (Exception e) {
-      log.error("{}", e);
+      log.error("{}", e.getCause());
       return null;
     }
   }
 
-  private void registerGlobalHandler() {
-    var uploadConfig = VertxApp.appConfig.getJsonObject("upload");
+  private void registerGlobalHandler(Vertx vertx) {
+    JsonObject config = vertx.getOrCreateContext().config();
+
+    var uploadConfig = config.getJsonObject("upload");
     BodyHandler bodyHandler = BodyHandler.create();
-    bodyHandler.setUploadsDirectory(VertxApp.fs.createTempDirectoryBlocking(""));
+    bodyHandler.setUploadsDirectory(vertx.fileSystem().createTempDirectoryBlocking(""));
     bodyHandler.setDeleteUploadedFilesOnEnd(false);
     bodyHandler.setBodyLimit(uploadConfig.getInteger("bodyLimit", -1));
 
-    var sessionConfig = VertxApp.appConfig.getJsonObject("session");
-    SessionHandlerImpl sessionHandler = new SessionHandlerImpl(LocalSessionStore.create(VertxApp.vertx));
+    var sessionConfig = config.getJsonObject("session");
+    SessionHandlerImpl sessionHandler = new SessionHandlerImpl(LocalSessionStore.create(vertx));
     sessionHandler.setSessionTimeout(sessionConfig.getLong("sessionTimeout", SessionHandler.DEFAULT_SESSION_TIMEOUT));
     sessionHandler.setCookieHttpOnlyFlag(sessionConfig.getBoolean("cookieHttpOnly", true));
     sessionHandler.setCookieSecureFlag(sessionConfig.getBoolean("cookieSecure", true));
@@ -166,15 +183,10 @@ public class WebRouter extends RouterImpl {
         log.error("Handler Class {} is not supported", handlerClass.getName());
       }
 
+      PATH_TO_HANDLER_MAP.put(path, handlerClass);
+
     });
 
-  }
-
-  public WebRouter() {
-    super(VertxApp.vertx);
-    registerGlobalHandler();
-    registerAllPathHandler();
-    registerPathHandler();
   }
 
 }

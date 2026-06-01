@@ -8,7 +8,7 @@
 
 package com.da.docs.handler;
 
-import com.da.docs.service.MessageService;
+import com.da.docs.serviceStatic.MSG;
 
 import io.vertx.core.Handler;
 import io.vertx.core.http.ServerWebSocket;
@@ -34,13 +34,13 @@ public class WebSocketHandler implements Handler<ServerWebSocket> {
           String userName = json.getString("userName");
           String userInfo = json.getString("userInfo", "Missing userInfo");
 
-          MessageService.addUser(ws, userName);
+          MSG.addUser(ws, userName);
 
           ws.writeTextMessage(
               JsonObject.of("msg", "Hello " + userInfo + "!").encode());
         }
       } catch (Exception e) {
-        MessageService.removeUser(ws);
+        MSG.removeUser(ws);
         ws.close();
         log.warn("Invalid WS message from {}: {}", ws.remoteAddress(), msg);
       }
@@ -50,7 +50,7 @@ public class WebSocketHandler implements Handler<ServerWebSocket> {
     ws.setWriteQueueMaxSize(64 * 1024);
 
     ws.closeHandler(v -> {
-      MessageService.removeUser(ws);
+      MSG.removeUser(ws);
       log.debug("WebSocket closed: {}", ws.remoteAddress());
     });
 

@@ -2,24 +2,27 @@
 <!-- status: log4j2 log level, monitorInterval="30" could let auto reload the config -->
 <Configuration statusLoggerLevel="WARN" monitorInterval="30">
   <Properties>
-    <Property name="LOG_HOME">/var/log/@project.artifactId@</Property>
+    <Property name="LOG_HOME">
+      /var/log/@project.artifactId@
+    </Property>
     <!-- %l for point to line -->
-    <Property name="PatternLayoutConsole">%d{HH:mm:ss.SSS} %highlight{[%-5level] [%c{36}] %msg%n}</Property>
+    <Property name="PatternLayoutConsole">
+      %highlight{%d{HH:mm:ss.SSS} [%-5level] [%c{36}] %msg%n}
+    </Property>
   </Properties>
-
   <Loggers>
     <Root level="DEBUG">
       <AppenderRef ref="Console" />
     </Root>
   </Loggers>
-
   <Appenders>
     <Console name="Console" target="SYSTEM_OUT">
       <ThresholdFilter level="TRACE" />
       <PatternLayout>
-        <Pattern>${PatternLayoutConsole}</Pattern>
+        <Pattern>
+          ${PatternLayoutConsole}
+        </Pattern>
       </PatternLayout>
     </Console>
   </Appenders>
-
 </Configuration>

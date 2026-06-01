@@ -43,7 +43,7 @@ public class TrustAllSSLSocketFactory extends SSLSocketFactory {
       } }, new SecureRandom());
       factory = ctx.getSocketFactory();
     } catch (Exception ex) {
-      log.error("Error initializing TrustAllSSLSocketFactory: {}", ex.getMessage());
+      log.error("Error initializing TrustAllSSLSocketFactory: {}", ex.getCause());
       throw new RuntimeException(ex);
     }
   }

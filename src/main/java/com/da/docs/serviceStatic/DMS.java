@@ -1,12 +1,12 @@
-/**********************************************************************************************************************
- * @Author                : Robert Huang<56649783@qq.com>                                                             *
- * @CreatedDate           : 2025-05-11 00:19:27                                                                       *
- * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2026-01-04 19:57:10                                                                       *
- * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
- *********************************************************************************************************************/
+/***********************************************************************************************************************
+ * @Author                : Robert Huang<56649783@qq.com>                                                              *
+ * @CreatedDate           : 2025-05-11 00:19:27                                                                        *
+ * @LastEditors           : Robert Huang<56649783@qq.com>                                                              *
+ * @LastEditDate          : 2026-05-22 12:06:59                                                                        *
+ * @CopyRight             : Dedienne Aerospace China ZhuHai                                                            *
+ **********************************************************************************************************************/
 
-package com.da.docs.service;
+package com.da.docs.serviceStatic;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -19,15 +19,15 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.da.docs.VertxApp;
 import com.da.docs.pojo.Attachment;
 import com.da.docs.pojo.Attachments;
 import com.da.docs.pojo.ResultData;
-import com.da.docs.utils.FSUtils;
+import com.da.docs.service.DocsService;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.github.benmanes.caffeine.cache.AsyncCacheLoader;
 import com.github.benmanes.caffeine.cache.AsyncLoadingCache;
@@ -37,22 +37,19 @@ import com.github.benmanes.caffeine.cache.RemovalListener;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.file.FileSystem;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import lombok.extern.log4j.Log4j2;
 
 @Log4j2
-public class DMSServices {
+public class DMS {
   // Static class, must be initialized, be careful the null value
-  private static String dmsServer = VertxApp.appConfig == null ? "" : VertxApp.appConfig.getString("dmsServer");
-  private static String dmsServerFast = VertxApp.appConfig == null ? "" : VertxApp.appConfig.getString("dmsServerFast");
-  private static FileSystem fs = VertxApp.fs == null ? Vertx.vertx().fileSystem() : VertxApp.fs;
+  private static String dmsServer = null;
+  private static String dmsServerFast = null;
 
-  public static void setup(String server, String serverFast, FileSystem fileSystem) {
-    dmsServer = server;
-    dmsServerFast = serverFast;
-    fs = fileSystem;
+  public static void setup(Vertx vertx) {
+    dmsServer = vertx.getOrCreateContext().config().getString("dmsServer");
+    dmsServerFast = vertx.getOrCreateContext().config().getString("dmsServerFast");
   }
 
   /**
@@ -65,7 +62,7 @@ public class DMSServices {
     String url = server
         + "/cocoon/View/LoginCAD/fr/AW_AutoLogin.html?userName=TEMP&dsn=dmsDS&Client_Type=25&computerName=AWS&LDAPControl=true";
 
-    return HttpService.get(url)
+    return HTTP.get(url)
         .compose(html -> {
           log.info("Login success, received HTML response");
 
@@ -101,7 +98,7 @@ public class DMSServices {
         + "/cocoon/View/LogoutXML/fr/AW_Logout7.html?userName=TEMP&dsn=dmsDS&Client_Type=25&AUSessionID="
         + sessionId;
 
-    return HttpService.get(url)
+    return HTTP.get(url)
         .onSuccess(res -> {
           log.debug("Logout success: {}", sessionId);
         })
@@ -183,7 +180,7 @@ public class DMSServices {
         search_encode,
         sessionId);
 
-    return HttpService.get(url)
+    return HTTP.get(url)
         .compose(xml -> {
           XmlMapper xmlMapper = new XmlMapper();
           try {
@@ -225,7 +222,7 @@ public class DMSServices {
         + "&AUSessionID=%s",
         objectId, sessionId);
 
-    return HttpService.get(url)
+    return HTTP.get(url)
         .compose(xml -> {
 
           XmlMapper xmlMapper = new XmlMapper();
@@ -303,7 +300,7 @@ public class DMSServices {
         + "&dsn=dmsDS"
         + "&Client_Type=25";
 
-    return HttpService.getFile(urlFast)
+    return HTTP.getFile(urlFast)
         .compose(bytes -> {
           if (bytes.length() == 0 || bytes.length() == 581) {
             dmsSessionCache.synchronous().invalidate(dmsServerFast);
@@ -314,7 +311,7 @@ public class DMSServices {
         })
         .recover(ar -> {
           // retry once
-          return HttpService.getFile(url)
+          return HTTP.getFile(url)
               .compose(bytes -> {
                 if (bytes.length() == 0 || bytes.length() == 581) {
                   dmsSessionCache.synchronous().invalidate(dmsServer);
@@ -328,15 +325,19 @@ public class DMSServices {
 
   /**
    * Get document information from DMS system
+   * 
    *
    * @param Pn Project number or similar identifier, used to filter documents
    * @return Returns a Future with a list of document information objects
    */
   public static Future<JsonArray> getDocuments(String Pn) {
-    Future<String> f1 = Future.fromCompletionStage(dmsSessionCache.get(dmsServer));
+    // login main server, to get the latest document information
+    // login fast server at the same time, to ready for download attachments
+    CompletableFuture<String> f1 = dmsSessionCache.get(dmsServer);
     dmsSessionCache.get(dmsServerFast);
+    Future<String> f3 = Future.fromCompletionStage(f1);
 
-    return f1.compose(sessionId -> {
+    return f3.compose(sessionId -> {
       return getObjectIds(dmsServer, sessionId, Pn)
           .compose(objIds -> {
             // if no object ids, return empty array immediately
@@ -382,33 +383,33 @@ public class DMSServices {
    * @return SKIP or START
    */
   public static Future<String> downloadDmsDocsCheck(String fileName, Long modifiedAtToCompare) {
-    return Future.all(FSUtils.getFolderPathByFileName(fileName), FSUtils.getDocsRoot()).compose(data -> {
-      String toSubFolder = data.resultAt(0);
-      String docRoot = data.resultAt(1);
-      String toFolderFullPath = docRoot + '/' + toSubFolder;
-      String toFileFullPath = toFolderFullPath + '/' + fileName;
 
-      return FSUtils.isFileExists(toFileFullPath).compose(fileExists -> {
-        if (fileExists) {
-          return FSUtils.getFileModifiedTime(toFileFullPath)
+    String toSubFolder = FS.getFolderPathByFileName(fileName);
+    String docRoot = FS.getDocsRoot();
+    String toFolderFullPath = docRoot + '/' + toSubFolder;
+    String toFileFullPath = toFolderFullPath + '/' + fileName;
+
+    return FS.isFileExists(toFileFullPath)
+        .compose(fileExists -> {
+          if (!fileExists) {
+            return Future.succeededFuture("START");
+          }
+
+          return FS.getFileModifiedTime(toFileFullPath)
               .compose(modifiedTime -> {
                 if (modifiedTime >= modifiedAtToCompare) {
                   log.debug("[Dms][DOWNLOAD] {} exists and is up-to-date, skip download", fileName);
                   return Future.succeededFuture("SKIP");
                 } else {
-                  return fs.delete(toFileFullPath).compose(v -> {
-                    log.info("[Dms][DOWNLOAD] {} exists and is outdated, re-downloading", fileName);
-                    return Future.succeededFuture("REDOWNLOAD");
-                  });
-
+                  return FS.fs.delete(toFileFullPath)
+                      .compose(v -> {
+                        log.info("[Dms][DOWNLOAD] {} exists and is outdated, re-downloading", fileName);
+                        return Future.succeededFuture("REDOWNLOAD");
+                      });
                 }
-
               });
-        } else {
-          return Future.succeededFuture("START");
-        }
-      });
-    });
+        });
+
   }
 
   /**
@@ -421,24 +422,20 @@ public class DMSServices {
    */
   public static Future<String> downloadDmsDocs(String fileName, String fileId, Long modifiedAt) {
     log.info("[Dms][DOWNLOAD] start download {} from Dms server", fileName);
+    Future<String> f1 = FS.fs.createTempFile(null, null);
+    Future<Buffer> f2 = getDocumentBuffer(fileId, fileName);
 
-    return Future.all(fs.createTempFile(null, null), getDocumentBuffer(fileId, fileName))
+    return Future.all(f1, f2)
         .compose(ar -> {
           String tempFile = ar.resultAt(0);
           Buffer buffer = ar.resultAt(1);
           log.info("[Dms][DOWNLOAD] {} from Dms server, size {}", fileName, buffer.length());
 
-          return fs.writeFile(tempFile, buffer)
-              .compose(v -> {
-                FSUtils.updateFileModifiedDate(tempFile, modifiedAt);
-                return Future.succeededFuture();
-              }).compose(v -> {
-                return new DocsService().moveFile(tempFile, fileName, "MOVE");
-              }).andThen(v3 -> {
-                new DocsService().addFileInfo(fileName, fileId);
-              }).compose(v -> {
-                return Future.succeededFuture("DOWNLOADED");
-              });
+          return FS.fs.writeFile(tempFile, buffer)
+              .compose(v -> FS.updateFileModifiedDate(tempFile, modifiedAt))
+              .compose(v -> FS.moveFile(tempFile, fileName, "MOVE"))
+              .compose(v -> new DocsService().addOrModifyFileInfo(fileName, fileId))
+              .compose(v -> Future.succeededFuture("DOWNLOADED"));
         });
   }
 

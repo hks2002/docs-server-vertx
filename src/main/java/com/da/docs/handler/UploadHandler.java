@@ -1,30 +1,29 @@
-/**********************************************************************************************************************
- * @Author                : Robert Huang<56649783@qq.com>                                                             *
- * @CreatedDate           : 2025-03-10 01:05:38                                                                       *
- * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-12-25 18:44:49                                                                       *
- * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
- *********************************************************************************************************************/
+/***********************************************************************************************************************
+ * @Author                : Robert Huang<56649783@qq.com>                                                              *
+ * @CreatedDate           : 2025-03-10 01:05:38                                                                        *
+ * @LastEditors           : Robert Huang<56649783@qq.com>                                                              *
+ * @LastEditDate          : 2026-05-25 09:38:23                                                                        *
+ * @CopyRight             : Dedienne Aerospace China ZhuHai                                                            *
+ **********************************************************************************************************************/
 
 package com.da.docs.handler;
 
 import java.util.List;
 import java.util.Optional;
 
+import com.da.docs.annotation.Permission;
 import com.da.docs.annotation.PostMapping;
 import com.da.docs.service.DocsService;
 import com.da.docs.service.LogService;
+import com.da.docs.serviceStatic.FS;
+import com.da.docs.serviceStatic.RESPONSE;
 import com.da.docs.utils.CommonUtils;
-import com.da.docs.utils.FSUtils;
-import com.da.docs.utils.Response;
 
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.internal.net.RFC3986;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.auth.User;
-import io.vertx.ext.auth.authorization.Authorizations;
-import io.vertx.ext.auth.authorization.PermissionBasedAuthorization;
 import io.vertx.ext.web.FileUpload;
 import io.vertx.ext.web.RoutingContext;
 import lombok.extern.log4j.Log4j2;
@@ -36,37 +35,30 @@ import lombok.extern.log4j.Log4j2;
  */
 @Log4j2
 @PostMapping("/docs-api/upload")
+@Permission("DOCS_WRITE")
 public class UploadHandler implements Handler<RoutingContext> {
-
-  public UploadHandler() {
-  }
+  private final DocsService docsService = new DocsService();
 
   @Override
   public void handle(RoutingContext context) {
-    User user = Optional.ofNullable(context.user()).orElse(User.create(new JsonObject()));
-
-    Authorizations authorizations = user.authorizations();
-    if (!authorizations.verify(PermissionBasedAuthorization.create("DOCS_WRITE"))) {
-      log.trace("{},{}", user.principal(), authorizations);
-      Response.forbidden(context);
-      return;
-    }
-
     HttpServerRequest request = context.request();
     String referer = request.headers().get(HttpHeaders.REFERER);
-    String refererPath = CommonUtils.normalizePath(referer);
+    String refererPath = RFC3986.normalizePath(referer);
 
     if (refererPath == null) {
-      Response.badRequest(context, "Bad Request, referer is null");
+      RESPONSE.badRequest(context, "Bad Request, referer is null");
       return;
     }
 
     String ip = CommonUtils.getTrueRemoteIp(request);
-    String loginName = user.principal().getString("login_name", "");
+    String userName = Optional
+        .ofNullable(context.user().principal())
+        .orElse(new JsonObject())
+        .getString("login_name", "none");
 
     List<FileUpload> uploads = context.fileUploads();
     if (uploads.size() > 1) {
-      Response.badRequest(context, "Bad Request, only one file is allowed");
+      RESPONSE.badRequest(context, "Bad Request, only one file is allowed");
       return;
     }
 
@@ -76,26 +68,26 @@ public class UploadHandler implements Handler<RoutingContext> {
     String fileName = upload.fileName();
 
     String lastModified = context.request().getHeader("Last-Modified");
-    FSUtils.updateFileModifiedDate(fromPath, lastModified);
+    FS.updateFileModifiedDate(fromPath, lastModified);
 
-    new DocsService().moveFile(fromPath, fileName, "UPDATE")
+    FS.moveFile(fromPath, fileName, "UPDATE")
         .onFailure(ar -> {
-          log.error("{}", ar.getMessage());
-          LogService.addLog("DOC_UPLOAD_FAILED", ip, loginName, "", fileName);
-          Response.internalError(context, "Upload file failed");
+          log.error("{}", ar.getCause());
+          LogService.addLog("DOC_UPLOAD_FAILED", ip, userName, "", fileName);
+          RESPONSE.internalError(context, "Upload file failed");
         })
         .compose(v -> {
-          return new DocsService().addFileInfo(fileName, null);
+          return docsService.addOrModifyFileInfo(fileName, null);
         })
         .onSuccess(rst -> {
           log.info("Upload file {} success", fileName);
-          LogService.addLog("DOC_UPLOAD_SUCCESS", ip, loginName, "", fileName);
-          Response.success(context, "Upload file success");
+          LogService.addLog("DOC_UPLOAD_SUCCESS", ip, userName, "", fileName);
+          RESPONSE.success(context, "Upload file success");
         })
         .onFailure(ar -> {
-          log.error("{}", ar.getMessage());
-          LogService.addLog("DOC_UPLOAD_FAILED", ip, loginName, "", fileName);
-          Response.internalError(context, "Upload file failed");
+          log.error("{}", ar.getCause());
+          LogService.addLog("DOC_UPLOAD_FAILED", ip, userName, "", fileName);
+          RESPONSE.internalError(context, "Upload file failed");
         });
 
   }

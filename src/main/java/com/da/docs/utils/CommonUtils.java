@@ -1,15 +1,13 @@
-/**********************************************************************************************************************
- * @Author                : Robert Huang<56649783@qq.com>                                                             *
- * @CreatedDate           : 2025-03-09 23:29:08                                                                       *
- * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-06-20 11:18:21                                                                       *
- * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
- *********************************************************************************************************************/
+/***********************************************************************************************************************
+ * @Author                : Robert Huang<56649783@qq.com>                                                              *
+ * @CreatedDate           : 2025-03-09 23:29:08                                                                        *
+ * @LastEditors           : Robert Huang<56649783@qq.com>                                                              *
+ * @LastEditDate          : 2026-05-25 10:10:21                                                                        *
+ * @CopyRight             : Dedienne Aerospace China ZhuHai                                                            *
+ **********************************************************************************************************************/
 
 package com.da.docs.utils;
 
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
@@ -52,21 +50,13 @@ public class CommonUtils {
     return ip;
   }
 
-  public static String normalizePath(String path) {
-    try {
-      URI uri = new URI(path);
-      return uri.normalize().getPath();
-    } catch (URISyntaxException e) {
-      return null;
-    }
-  }
-
   private static final Collection<MIMEHeader> LISTING_ACCEPT = Arrays.asList(
       new ParsableMIMEValue("text/html").forceParse(),
       new ParsableMIMEValue("text/plain").forceParse(),
       new ParsableMIMEValue("application/json").forceParse());
 
   public static String getAccept(RoutingContext context) {
+    context.getAcceptableContentType();
     var headerValues = context.parsedHeaders();
     final List<MIMEHeader> accepts = headerValues.accept();
     String accept = "text/plain";

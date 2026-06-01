@@ -1,17 +1,17 @@
-/**********************************************************************************************************************
- * @Author                : Robert Huang<56649783@qq.com>                                                             *
- * @CreatedDate           : 2025-03-16 11:51:49                                                                       *
- * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2025-10-04 15:19:50                                                                       *
- * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
- *********************************************************************************************************************/
+/***********************************************************************************************************************
+ * @Author                : Robert Huang<56649783@qq.com>                                                              *
+ * @CreatedDate           : 2025-03-16 11:51:49                                                                        *
+ * @LastEditors           : Robert Huang<56649783@qq.com>                                                              *
+ * @LastEditDate          : 2026-05-24 16:23:15                                                                        *
+ * @CopyRight             : Dedienne Aerospace China ZhuHai                                                            *
+ **********************************************************************************************************************/
 
 package com.da.docs.handler;
 
 import com.da.docs.annotation.PostMapping;
 import com.da.docs.service.LogService;
+import com.da.docs.serviceStatic.RESPONSE;
 import com.da.docs.utils.CommonUtils;
-import com.da.docs.utils.Response;
 
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpServerRequest;
@@ -28,7 +28,7 @@ public class LogoutHandler implements Handler<RoutingContext> {
     User u = context.user();
 
     if (u == null) {
-      Response.success(context, "Logout Success");
+      RESPONSE.success(context, "Logout Success");
     } else {
 
       String accept = CommonUtils.getAccept(context);
@@ -40,14 +40,14 @@ public class LogoutHandler implements Handler<RoutingContext> {
       switch (accept) {
         case "application/json":
           context.userContext().clear();
-          Response.success(context, "Logout Success");
+          RESPONSE.success(context, "Logout Success");
           break;
         default:
           context.userContext().logout("/docs-web/#/login")
               .onSuccess((ar) -> {
               })
               .onFailure((ar) -> {
-                Response.internalError(context, "Logout Failed");
+                RESPONSE.internalError(context, "Logout Failed");
               });
       }
 

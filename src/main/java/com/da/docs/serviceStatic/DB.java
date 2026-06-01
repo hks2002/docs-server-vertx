@@ -1,12 +1,12 @@
-/**********************************************************************************************************************
- * @Author                : Robert Huang<56649783@qq.com>                                                             *
- * @CreatedDate           : 2025-03-20 11:15:15                                                                       *
- * @LastEditors           : Robert Huang<56649783@qq.com>                                                             *
- * @LastEditDate          : 2026-01-04 17:03:23                                                                       *
- * @CopyRight             : Dedienne Aerospace China ZhuHai                                                           *
- *********************************************************************************************************************/
+/***********************************************************************************************************************
+ * @Author                : Robert Huang<56649783@qq.com>                                                              *
+ * @CreatedDate           : 2025-03-20 11:15:15                                                                        *
+ * @LastEditors           : Robert Huang<56649783@qq.com>                                                              *
+ * @LastEditDate          : 2026-05-22 11:36:34                                                                        *
+ * @CopyRight             : Dedienne Aerospace China ZhuHai                                                            *
+ **********************************************************************************************************************/
 
-package com.da.docs.db;
+package com.da.docs.serviceStatic;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -17,10 +17,8 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.da.docs.VertxApp;
-import com.da.docs.utils.FSUtils;
-
 import io.vertx.core.Future;
+import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.ClientSSLOptions;
 import io.vertx.mssqlclient.MSSQLConnectOptions;
@@ -41,26 +39,19 @@ public class DB {
   private static Pool[] pools = new Pool[2];
   private static DateTimeFormatter fmt = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
-  public static void initDB() {
-    MySQLConnectOptions mysqlOptions = new MySQLConnectOptions(VertxApp.appConfig.getJsonObject("mysql"));
-    MSSQLConnectOptions mssqlOptions = new MSSQLConnectOptions(VertxApp.appConfig.getJsonObject("mssql"));
+  public static void setup(Vertx vertx) {
+    JsonObject config = vertx.getOrCreateContext().config();
+    MySQLConnectOptions mysqlOptions = new MySQLConnectOptions(config.getJsonObject("mysql"));
+    MSSQLConnectOptions mssqlOptions = new MSSQLConnectOptions(config.getJsonObject("mssql"));
     ClientSSLOptions sslOptions = new ClientSSLOptions().setTrustAll(true);
     mysqlOptions.setSslOptions(sslOptions);
     mssqlOptions.setSslOptions(sslOptions);
 
-    PoolOptions mysqlPoolOptions = new PoolOptions(VertxApp.appConfig.getJsonObject("mysqlPoolOptions"));
-    PoolOptions mssqlPoolOptions = new PoolOptions(VertxApp.appConfig.getJsonObject("mssqlPoolOptions"));
+    PoolOptions mysqlPoolOptions = new PoolOptions(config.getJsonObject("mysqlPoolOptions"));
+    PoolOptions mssqlPoolOptions = new PoolOptions(config.getJsonObject("mssqlPoolOptions"));
 
-    Pool mysqlClient = Pool.pool(VertxApp.vertx, mysqlOptions, mysqlPoolOptions);
-    Pool mssqlClient = Pool.pool(VertxApp.vertx, mssqlOptions, mssqlPoolOptions);
-
-    DB.pools[0] = mysqlClient;
-    DB.pools[1] = mssqlClient;
-  }
-
-  public static void initDB(MySQLConnectOptions mysqlOptions, MSSQLConnectOptions mssqlOptions) {
-    Pool mysqlClient = Pool.pool(VertxApp.vertx, mysqlOptions, new PoolOptions());
-    Pool mssqlClient = Pool.pool(VertxApp.vertx, mssqlOptions, new PoolOptions());
+    Pool mysqlClient = Pool.pool(vertx, mysqlOptions, mysqlPoolOptions);
+    Pool mssqlClient = Pool.pool(vertx, mssqlOptions, mssqlPoolOptions);
 
     DB.pools[0] = mysqlClient;
     DB.pools[1] = mssqlClient;
@@ -111,23 +102,24 @@ public class DB {
       limitJson.put("limit", 100);
     }
 
-    return validate(sqlTemplate, limitJson).compose(valid -> {
-      String sql = replacePlaceholder(sqlTemplate, limitJson);
-      log.debug("sql: \n{}", sql);
-      return pools[dbIdx].query(sql)
-          .execute()
-          .compose(rowSet -> {
-            List<JsonObject> list = new ArrayList<>();
-            for (Row row : rowSet) {
-              list.add(row.toJson());
-            }
+    return validate(sqlTemplate, limitJson)
+        .compose(valid -> {
+          String sql = replacePlaceholder(sqlTemplate, limitJson);
+          log.debug("sql: \n{}", sql);
+          return pools[dbIdx].query(sql)
+              .execute()
+              .compose(rowSet -> {
+                List<JsonObject> list = new ArrayList<>();
+                for (Row row : rowSet) {
+                  list.add(row.toJson());
+                }
 
-            return Future.succeededFuture(list);
-          })
-          .onFailure(e -> {
-            log.error("{}\n\n{}\n\n{}\n", e.getMessage(), sql, limitJson.encodePrettily());
-          });
-    });
+                return Future.succeededFuture(list);
+              })
+              .onFailure(e -> {
+                log.error("{}\n\n{}\n\n{}\n", e.getCause(), sql, limitJson.encodePrettily());
+              });
+        });
   }
 
   public static Future<List<JsonObject>> queryBySql(String sqlTemplate, JsonObject json) {
@@ -135,7 +127,7 @@ public class DB {
   }
 
   public static Future<List<JsonObject>> queryByFile(String sqlFileName, JsonObject json, int dbIdx) {
-    return FSUtils.fs.readFile("sqlTemplate/" + sqlFileName + ".sql")
+    return FS.fs.readFile("sqlTemplate/" + sqlFileName + ".sql")
         .compose(sqlTemplate -> {
           return queryBySql(sqlTemplate.toString(), json, dbIdx);
         })
@@ -168,7 +160,7 @@ public class DB {
             }
           })
           .onFailure(e -> {
-            log.error("{}\n\n{}\n\n{}\n", e.getMessage(), sql, updateJson.encodePrettily());
+            log.error("{}\n\n{}\n\n{}\n", e.getCause(), sql, updateJson.encodePrettily());
           });
     });
   }
@@ -178,7 +170,7 @@ public class DB {
   }
 
   public static Future<Integer> insertByFile(String sqlFileName, JsonObject json, int dbIdx) {
-    return FSUtils.fs.readFile("sqlTemplate/" + sqlFileName + ".sql")
+    return FS.fs.readFile("sqlTemplate/" + sqlFileName + ".sql")
         .compose(sqlTemplate -> {
           log.debug("sqlTemplate:\n{}", sqlTemplate);
           return insertBySql(sqlTemplate.toString(), json, dbIdx);
@@ -211,7 +203,7 @@ public class DB {
             }
           })
           .onFailure(e -> {
-            log.error("{}\n\n{}\n\n{}\n", e.getMessage(), sql, updateJson.encodePrettily());
+            log.error("{}\n\n{}\n\n{}\n", e.getCause(), sql, updateJson.encodePrettily());
           });
     });
   }
@@ -221,7 +213,7 @@ public class DB {
   }
 
   public static Future<Integer> updateByFile(String sqlFileName, JsonObject json, int dbIdx) {
-    return FSUtils.fs.readFile("sqlTemplate/" + sqlFileName + ".sql")
+    return FS.fs.readFile("sqlTemplate/" + sqlFileName + ".sql")
         .compose(sqlTemplate -> {
           return updateBySql(sqlTemplate.toString(), json, dbIdx);
         }).onFailure(ar -> {
@@ -248,7 +240,7 @@ public class DB {
             }
           })
           .onFailure(e -> {
-            log.error("{}\n\n{}\n\n{}\n", e.getMessage(), sql, json.encodePrettily());
+            log.error("{}\n\n{}\n\n{}\n", e.getCause(), sql, json.encodePrettily());
           });
     });
 
@@ -259,7 +251,7 @@ public class DB {
   }
 
   public static Future<Integer> deleteByFile(String sqlFileName, JsonObject json, int dbIdx) {
-    return FSUtils.fs.readFile("sqlTemplate/" + sqlFileName + ".sql")
+    return FS.fs.readFile("sqlTemplate/" + sqlFileName + ".sql")
         .compose(sqlTemplate -> {
           return deleteBySql(sqlTemplate.toString(), json, dbIdx);
         })
