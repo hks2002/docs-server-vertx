@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                              *
  * @CreatedDate           : 2025-04-02 16:48:46                                                                        *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                              *
- * @LastEditDate          : 2026-05-25 16:02:11                                                                        *
+ * @LastEditDate          : 2026-06-10 13:54:30                                                                        *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                            *
  **********************************************************************************************************************/
 
@@ -50,12 +50,15 @@ public class DocsService {
         })
         .onSuccess(ar3 -> {
           log.trace("[File] Modify doc: {}", obj.encodePrettily());
-          LogService.addLog(
-              "DOC_INFO_UPDATE",
-              "127.0.0.1",
-              "system",
-              "",
-              obj.getString("file_name"));
+          /*
+           * Too many logs, comment it out
+           * LogService.addLog(
+           * "DOC_INFO_UPDATE",
+           * "127.0.0.1",
+           * "system",
+           * "",
+           * obj.getString("file_name"));
+           */
         });
   }
 
