@@ -1,5 +1,31 @@
 # Changelog
 
+## [1.9.0](https://github.com/hks2002/docs-server-vertx/compare/v1.8.0...v1.9.0) (2026-06-10)
+
+
+### Features
+
+* ✨add fileId for dms files search ([7a92553](https://github.com/hks2002/docs-server-vertx/commit/7a925539eb63ac59fd923563e70389bddd836297))
+* ✨better error log for DB operation ([2b73a17](https://github.com/hks2002/docs-server-vertx/commit/2b73a17c8e48aa192db495630ab33d27a189383c))
+* ✨doc result by modified datetime ([996c88b](https://github.com/hks2002/docs-server-vertx/commit/996c88bc5925171a3db5a81d16c3ebceea56f7c7))
+* ✨enhanced the websocket ([d394028](https://github.com/hks2002/docs-server-vertx/commit/d3940282c79535b54f69affd149012bfd1f4c8d9))
+* ✨improve Message ([bf1b83d](https://github.com/hks2002/docs-server-vertx/commit/bf1b83dffcf736ce4d66a8783d9bb9012f4fa792))
+
+
+### Bug Fixes
+
+* 🐛 bugs fix ([43e8a21](https://github.com/hks2002/docs-server-vertx/commit/43e8a21f85701de3f2e66ab0a2573381ae04f2c8))
+* 🐛 fix future join failed ([0242b6e](https://github.com/hks2002/docs-server-vertx/commit/0242b6e947d44639a4a96d1bc6f2c02f6b9a595d))
+* 🐛 fix is_link insert bugs ([77f91bb](https://github.com/hks2002/docs-server-vertx/commit/77f91bb6cff525722e9668e16989a9e60da0c20c))
+* 🐛 fix search docs bug, make every doc could access ([da0a6a8](https://github.com/hks2002/docs-server-vertx/commit/da0a6a8da5885ff88f26e0d7a06f39667c074545))
+* 🐛fix bp update bug ([6f5e418](https://github.com/hks2002/docs-server-vertx/commit/6f5e4183137c1fa9a3090268f0e8f952432e8ad5))
+* 🐛fix log not working ([cb4c954](https://github.com/hks2002/docs-server-vertx/commit/cb4c95467bff38529b7e8529fff9fb71230a139f))
+
+
+### Performance Improvements
+
+* 🚀 disable docs info update log into DB ([4809855](https://github.com/hks2002/docs-server-vertx/commit/4809855b818c03049f4195d8fd3591dac7b385d4))
+
 ## [1.8.0](https://github.com/hks2002/docs-server-vertx/compare/v1.7.0...v1.8.0) (2026-01-09)
 
 
