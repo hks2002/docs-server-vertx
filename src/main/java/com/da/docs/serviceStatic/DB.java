@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                              *
  * @CreatedDate           : 2025-03-20 11:15:15                                                                        *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                              *
- * @LastEditDate          : 2026-05-22 11:36:34                                                                        *
+ * @LastEditDate          : 2026-06-10 14:14:18                                                                        *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                            *
  **********************************************************************************************************************/
 
@@ -117,7 +117,7 @@ public class DB {
                 return Future.succeededFuture(list);
               })
               .onFailure(e -> {
-                log.error("{}\n\n{}\n\n{}\n", e.getCause(), sql, limitJson.encodePrettily());
+                log.error("{}\n{}\n{}\n\n{}\n", e.getMessage(), e.getCause(), sql, limitJson.encodePrettily());
               });
         });
   }
@@ -131,8 +131,8 @@ public class DB {
         .compose(sqlTemplate -> {
           return queryBySql(sqlTemplate.toString(), json, dbIdx);
         })
-        .onFailure(ar -> {
-          log.error("{}", ar.getCause());
+        .onFailure(e -> {
+          log.error("{}\n{}", e.getMessage(), e.getCause());
         });
   }
 
@@ -160,7 +160,7 @@ public class DB {
             }
           })
           .onFailure(e -> {
-            log.error("{}\n\n{}\n\n{}\n", e.getCause(), sql, updateJson.encodePrettily());
+            log.error("{}\n{}\n{}\n\n{}\n", e.getMessage(), e.getCause(), sql, updateJson.encodePrettily());
           });
     });
   }
@@ -174,8 +174,8 @@ public class DB {
         .compose(sqlTemplate -> {
           log.debug("sqlTemplate:\n{}", sqlTemplate);
           return insertBySql(sqlTemplate.toString(), json, dbIdx);
-        }).onFailure(ar -> {
-          log.error("{}", ar.getCause());
+        }).onFailure(e -> {
+          log.error("{}\n{}", e.getMessage(), e.getCause());
         });
   }
 
@@ -203,7 +203,7 @@ public class DB {
             }
           })
           .onFailure(e -> {
-            log.error("{}\n\n{}\n\n{}\n", e.getCause(), sql, updateJson.encodePrettily());
+            log.error("{}\n{}\n{}\n\n{}\n", e.getMessage(), e.getCause(), sql, updateJson.encodePrettily());
           });
     });
   }
@@ -216,8 +216,8 @@ public class DB {
     return FS.fs.readFile("sqlTemplate/" + sqlFileName + ".sql")
         .compose(sqlTemplate -> {
           return updateBySql(sqlTemplate.toString(), json, dbIdx);
-        }).onFailure(ar -> {
-          log.error("{}", ar.getCause());
+        }).onFailure(e -> {
+          log.error("{}\n{}", e.getMessage(), e.getCause());
         });
   }
 
@@ -240,7 +240,7 @@ public class DB {
             }
           })
           .onFailure(e -> {
-            log.error("{}\n\n{}\n\n{}\n", e.getCause(), sql, json.encodePrettily());
+            log.error("{}\n{}\n{}\n\n{}\n", e.getMessage(), e.getCause(), sql, json.encodePrettily());
           });
     });
 
@@ -255,8 +255,8 @@ public class DB {
         .compose(sqlTemplate -> {
           return deleteBySql(sqlTemplate.toString(), json, dbIdx);
         })
-        .onFailure(ar -> {
-          log.error("{}", ar.getCause());
+        .onFailure(e -> {
+          log.error("{}\n{}", e.getMessage(), e.getCause());
         });
   }
 

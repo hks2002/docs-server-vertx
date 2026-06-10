@@ -2,7 +2,7 @@
  * @Author                : Robert Huang<56649783@qq.com>                                                              *
  * @CreatedDate           : 2025-03-21 19:32:00                                                                        *
  * @LastEditors           : Robert Huang<56649783@qq.com>                                                              *
- * @LastEditDate          : 2026-05-22 11:20:38                                                                        *
+ * @LastEditDate          : 2026-06-10 14:08:43                                                                        *
  * @CopyRight             : Dedienne Aerospace China ZhuHai                                                            *
  **********************************************************************************************************************/
 
@@ -43,6 +43,44 @@ public class TestDB {
       DB.queryBySql("SELECT * from docs LIMIT 10", new JsonObject())
           .onSuccess(result -> {
             log.info("Success: {}", result);
+          })
+          .onComplete(ar -> {
+            testContext.completeNow();
+          });
+
+      String sql = """
+          INSERT INTO
+              docs (
+                file_name,
+                dms_id,
+                size,
+                is_link,
+                doc_create_at,
+                doc_modified_at,
+                md5,
+                create_at,
+                create_by
+              )
+            VALUES
+              (
+                '9C2323G01_A.pdf',
+                '518767',
+                '366174',
+                'false',
+                '2026-06-10 13:34:30',
+                '2026-06-10 13:34:30',
+                'dea446717c8c286be3dbf78016bacb19',
+                '2026-06-10T13:34:30.476054289',
+                '0'
+              );
+          """;
+
+      // get the error message
+      DB.insertBySql(sql, new JsonObject())
+          .onSuccess(result -> {
+            log.info("Success: {}", result);
+          }).onFailure(e -> {
+            log.error("Error: {}\n {}", e.getMessage(), e.getCause());
           })
           .onComplete(ar -> {
             testContext.completeNow();
