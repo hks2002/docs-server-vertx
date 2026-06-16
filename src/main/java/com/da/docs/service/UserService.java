@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Set;
 
 import com.da.docs.serviceStatic.DB;
+import com.da.docs.utils.CommonUtils;
 
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
@@ -189,6 +190,13 @@ public class UserService {
           });
     }
 
+  }
+
+  /**
+   * login and return the user with permission
+   */
+  public Future<User> login(String authorization, String ip) {
+    return login(CommonUtils.getCredentials(authorization), ip);
   }
 
 }

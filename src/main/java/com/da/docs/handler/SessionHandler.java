@@ -11,9 +11,13 @@ package com.da.docs.handler;
 import com.da.docs.WebRouter;
 import com.da.docs.annotation.AllMapping;
 import com.da.docs.annotation.Permission;
+import com.da.docs.service.UserService;
 import com.da.docs.serviceStatic.RESPONSE;
+import com.da.docs.utils.CommonUtils;
 
 import io.vertx.core.Handler;
+import io.vertx.core.http.HttpHeaders;
+import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.auth.User;
 import io.vertx.ext.auth.authorization.Authorizations;
 import io.vertx.ext.auth.authorization.PermissionBasedAuthorization;
@@ -33,26 +37,48 @@ public class SessionHandler implements Handler<RoutingContext> {
   @Override
   public void handle(RoutingContext context) {
     String requestPath = context.normalizedPath();
-
-    User u = context.user();
-
     if (isPublicPath(requestPath)) {
       context.next();
       return;
     }
 
-    if (u == null) {
+    HttpServerRequest request = context.request();
+    String ip = CommonUtils.getTrueRemoteIp(request);
+    String authorization = request.headers().get(HttpHeaders.AUTHORIZATION);
+
+    User u = context.user();
+
+    if (u != null) {
+      log.trace("user: {} cached in session", u.principal());
+
+      if (!checkPermission(context, u, requestPath)) {
+        return;
+      }
+
+      context.next();
+      return;
+    }
+
+    if (authorization != null && !authorization.isEmpty()) {
+      UserService userService = new UserService(context.vertx());
+      userService.login(authorization, ip)
+          .onFailure(err -> {
+            log.trace("Auto login failed: {}", err.getMessage());
+            RESPONSE.unauthorized(context, "Login failed");
+          })
+          .onSuccess(user -> {
+            if (!checkPermission(context, user, requestPath)) {
+              RESPONSE.forbidden(context);
+              return;
+            }
+            context.next();
+          });
+      return;
+    } else {
       RESPONSE.unauthorized(context, "Session expired or not logged in");
       return;
     }
 
-    log.trace("user: {} cached in session", u.principal());
-
-    if (!checkPermission(context, u, requestPath)) {
-      return;
-    }
-
-    context.next();
   }
 
   private boolean isPublicPath(String path) {
