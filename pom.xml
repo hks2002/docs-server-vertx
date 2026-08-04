@@ -169,25 +169,6 @@
           </archive>
         </configuration>
       </plugin>
-      <!-- copy dependencies to lib -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <version>3.8.1</version>
-        <executions>
-          <execution>
-            <id>copy-dependencies</id>
-            <phase>package</phase>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <configuration>
-              <outputDirectory>${project.build.directory}/lib</outputDirectory>
-              <includeScope>runtime</includeScope>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
       <!-- keep jar with version and no version at same times -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -203,55 +184,6 @@
               <target>
                 <copy file="${project.build.directory}/${project.artifactId}-${project.version}.jar" tofile="${project.build.directory}/${project.artifactId}.jar"/>
               </target>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <!-- package all dependencies into jar -->
-      <plugin>
-        <artifactId>maven-shade-plugin</artifactId>
-        <version>3.6.0</version>
-        <configuration>
-          <createDependencyReducedPom>false</createDependencyReducedPom>
-        </configuration>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>shade</goal>
-            </goals>
-            <configuration>
-              <filters>
-                <filter>
-                  <artifact>*:*</artifact>
-                  <excludes>
-                    <exclude>META-INF/*.SF</exclude>
-                    <exclude>META-INF/*.DSA</exclude>
-                    <exclude>META-INF/*.RSA</exclude>
-                    <exclude>META-INF/MANIFEST.MF</exclude>
-                    <exclude>META-INF/DEPENDENCIES</exclude>
-                    <exclude>module-info.class</exclude>
-                    <exclude>META-INF/versions/**/module-info.class</exclude>
-                    <exclude>META-INF/versions/9/OSGI-INF/MANIFEST.MF</exclude>
-                    <exclude>META-INF/io.netty.versions.properties</exclude>
-                  </excludes>
-                </filter>
-              </filters>
-              <transformers>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                  <manifestEntries>
-                    <App-Name>${project.name}</App-Name>
-                    <App-Version>${project.version}</App-Version>
-                    <Main-Class>com.da.docs.VertxApp</Main-Class>
-                  </manifestEntries>
-                </transformer>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer"/>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer"/>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
-              </transformers>
-              <outputFile>
-                ${project.build.directory}/${project.artifactId}-fat.jar
-              </outputFile>
             </configuration>
           </execution>
         </executions>
